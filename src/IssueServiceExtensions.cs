@@ -47,20 +47,20 @@ namespace Atlassian.Jira.AspNetCore
             var jql = expressionVisitor.Process(expression);
 
             if (countOnly)
-                return issueService.Query(jql.Expression, 0);
+                return issueService.QueryIssuesAsyncEnum(jql.Expression, 0);
             else
-                return issueService.Query(jql.Expression, jql.NumberOfResults, jql.SkipResults ?? 0);
+                return issueService.QueryIssuesAsyncEnum(jql.Expression, jql.NumberOfResults, jql.SkipResults ?? 0);
         }
 
         public static ValueTask<int> QueryCountAsync(this IIssueService issueService, string jqlString,
             CancellationToken cancellationToken = default)
         {
             return issueService
-                .Query(jqlString, 0)
+                .QueryIssuesAsyncEnum(jqlString, 0)
                 .CountAsync(cancellationToken);
         }
 
-        public static IJqlResultsAsyncEnumerable Query(this IIssueService issueService,
+        public static IJqlResultsAsyncEnumerable QueryIssuesAsyncEnum(this IIssueService issueService,
             string jqlString, int? maxIssues = null, int startAt = 0)
         {
             JiraAsyncEnumerable.Pager<Issue> getNextPage = (startPageAt, cancellationToken) =>
@@ -69,7 +69,7 @@ namespace Atlassian.Jira.AspNetCore
             return new JqlResultsAsyncEnumerable(getNextPage, startAt, jqlString);
         }
 
-        public static IJqlResultsAsyncEnumerable Query(this IIssueService issueService, IssueSearchOptions options)
+        public static IJqlResultsAsyncEnumerable QueryIssuesAsyncEnum(this IIssueService issueService, IssueSearchOptions options)
         {
             JiraAsyncEnumerable.Pager<Issue> getNextPage = (startPageAt, cancellationToken) =>
             {
@@ -78,6 +78,24 @@ namespace Atlassian.Jira.AspNetCore
             };
 
             return new JqlResultsAsyncEnumerable(getNextPage, options.StartAt, options.Jql);
+        }
+
+        public static IJiraAsyncEnumerable<Comment> GetCommentsAsyncEnum(
+            this IIssueService issueService, string issueKey, int? maxComments, int startAt = 0)
+        {
+            JiraAsyncEnumerable.Pager<Comment> getNextPage = (startPageAt, cancellationToken) =>
+                issueService.GetPagedCommentsAsync(issueKey, maxComments, startPageAt, cancellationToken);
+
+            return JiraAsyncEnumerable.Create(getNextPage, startAt);
+        }
+
+        public static IJiraAsyncEnumerable<Issue> GetSubTasksAsyncEnum(
+            this IIssueService issueService, string issueKey, int? maxIssues, int startAt = 0)
+        {
+            JiraAsyncEnumerable.Pager<Issue> getNextPage = (startPageAt, cancellationToken) =>
+                issueService.GetSubTasksAsync(issueKey, maxIssues, startAt, cancellationToken);
+
+            return JiraAsyncEnumerable.Create(getNextPage, startAt);
         }
     }
 }
