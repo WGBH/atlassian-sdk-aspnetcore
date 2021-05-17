@@ -62,15 +62,31 @@ namespace Atlassian.Jira.AspNetCore
 
             while (i < _currentPage.TotalItems)
             {
-                foreach (var issue in _currentPage)
+                foreach (var item in _currentPage)
                 {
                     i++;
-                    yield return issue;
+                    yield return item;
                 }
 
                 if (i < _currentPage.TotalItems)
                     _currentPage = await _getNextPage(i, cancellationToken).ConfigureAwait(false);
             }
+        }
+    }
+
+    public interface IJqlResultsAsyncEnumerable<T> : IJiraAsyncEnumerable<T>
+    {
+        string JqlString { get; }
+    }
+
+    class JqlResultsAsyncEnumerable : JiraAsyncEnumerable<Issue>, IJqlResultsAsyncEnumerable<Issue>
+    {
+        public string JqlString { get; }
+
+        public JqlResultsAsyncEnumerable(JiraAsyncEnumerable.Pager<Issue> getNextPage,
+            int startAt, string jqlString) : base(getNextPage, startAt)
+        {
+            JqlString = jqlString;
         }
     }
 }
