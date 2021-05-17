@@ -8,7 +8,7 @@ namespace Atlassian.Jira.AspNetCore
             JiraAsyncEnumerable.Pager<JiraUser> getNextPage = (startPageAt, cancellationToken) =>
                 groupService.GetUsersAsync(groupName, includeInactiveUsers, maxResults, startPageAt, cancellationToken);
 
-            return JiraAsyncEnumerable.Create(getNextPage, startAt);
+            return JiraAsyncEnumerable.Create(getNextPage, startAt, maxResults);
         }
     }
 }

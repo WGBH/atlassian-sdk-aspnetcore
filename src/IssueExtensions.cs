@@ -10,7 +10,7 @@ namespace Atlassian.Jira.AspNetCore
             JiraAsyncEnumerable.Pager<Issue> getNextPage = (startPageAt, cancellationToken) =>
                 issue.GetSubTasksAsync(maxIssues, startPageAt, cancellationToken);
 
-            return JiraAsyncEnumerable.Create(getNextPage, startAt);
+            return JiraAsyncEnumerable.Create(getNextPage, startAt, maxIssues);
         }
 
         public static IJiraAsyncEnumerable<Comment> GetCommentsAsyncEnum(
@@ -19,7 +19,7 @@ namespace Atlassian.Jira.AspNetCore
             JiraAsyncEnumerable.Pager<Comment> getNextPage = (startPageAt, cancellationToken) =>
                 issue.GetPagedCommentsAsync(maxComments, startAt, cancellationToken);
 
-            return JiraAsyncEnumerable.Create(getNextPage, startAt);
+            return JiraAsyncEnumerable.Create(getNextPage, startAt, maxComments);
         }
     }
 }

@@ -14,8 +14,8 @@ namespace Atlassian.Jira.AspNetCore
         readonly Func<Issue, T> _selector;
 
         public OneArgSelectorJqlResultsAsyncEnumerable(JiraAsyncEnumerable.Pager<Issue> getNextPage,
-            int startAt, string jqlString,  Func<Issue, T> selector)
-            : base(getNextPage, startAt, jqlString)
+            int startAt, string jqlString, int? maxIssues, Func<Issue, T> selector)
+            : base(getNextPage, startAt, jqlString, maxIssues)
         {
             _selector = selector;
         }
@@ -32,8 +32,8 @@ namespace Atlassian.Jira.AspNetCore
         readonly Func<Issue, int, T> _selector;
 
         public TwoArgSelectorJqlResultsAsyncEnumerable(JiraAsyncEnumerable.Pager<Issue> getNextPage,
-            int startAt, string jqlString,  Func<Issue, int, T> selector)
-            : base(getNextPage, startAt, jqlString)
+            int startAt, string jqlString, int? maxIssues, Func<Issue, int, T> selector)
+            : base(getNextPage, startAt, jqlString, maxIssues)
         {
             _selector = selector;
         }
@@ -121,21 +121,21 @@ namespace Atlassian.Jira.AspNetCore
                     var selector = oneArgSelectorExpression.Compile();
 
                     return new OneArgSelectorJqlResultsAsyncEnumerable<T>(
-                        getNextPage, jql.SkipResults ?? 0, jql.Expression, selector);
+                        getNextPage, jql.SkipResults ?? 0, jql.Expression, jql.NumberOfResults, selector);
                 }
                 else
                 {
                     var selector = ((Expression<Func<Issue, int, T>>) selectorExpression).Compile();
 
                     return new TwoArgSelectorJqlResultsAsyncEnumerable<T>(
-                        getNextPage, jql.SkipResults ?? 0, jql.Expression, selector);
+                        getNextPage, jql.SkipResults ?? 0, jql.Expression, jql.NumberOfResults, selector);
                 }
             }
 
             Debug.Assert(typeof(T) == typeof(Issue));
 
             return (IJqlResultsAsyncEnumerable<T>)
-                new JqlResultsAsyncEnumerable(getNextPage, jql.SkipResults ?? 0, jql.Expression);
+                new JqlResultsAsyncEnumerable(getNextPage, jql.SkipResults ?? 0, jql.Expression, jql.NumberOfResults);
         }
     }
 

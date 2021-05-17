@@ -19,7 +19,7 @@ namespace Atlassian.Jira.AspNetCore
             JiraAsyncEnumerable.Pager<Issue> getNextPage = (startPageAt, cancellationToken) =>
                 issueService.GetIssuesFromJqlAsync(jqlString, maxIssues, startPageAt, cancellationToken);
 
-            return new JqlResultsAsyncEnumerable(getNextPage, startAt, jqlString);
+            return new JqlResultsAsyncEnumerable(getNextPage, startAt, jqlString, maxIssues);
         }
 
         public static IJqlResultsAsyncEnumerable<Issue> QueryIssuesAsyncEnum(this IIssueService issueService, IssueSearchOptions options)
@@ -30,7 +30,7 @@ namespace Atlassian.Jira.AspNetCore
                 return issueService.GetIssuesFromJqlAsync(options, cancellationToken);
             };
 
-            return new JqlResultsAsyncEnumerable(getNextPage, options.StartAt, options.Jql);
+            return new JqlResultsAsyncEnumerable(getNextPage, options.StartAt, options.Jql, null);
         }
 
         public static IJiraAsyncEnumerable<Comment> GetCommentsAsyncEnum(
@@ -39,7 +39,7 @@ namespace Atlassian.Jira.AspNetCore
             JiraAsyncEnumerable.Pager<Comment> getNextPage = (startPageAt, cancellationToken) =>
                 issueService.GetPagedCommentsAsync(issueKey, maxComments, startPageAt, cancellationToken);
 
-            return JiraAsyncEnumerable.Create(getNextPage, startAt);
+            return JiraAsyncEnumerable.Create(getNextPage, startAt, maxComments);
         }
 
         public static IJiraAsyncEnumerable<Issue> GetSubTasksAsyncEnum(
@@ -48,7 +48,7 @@ namespace Atlassian.Jira.AspNetCore
             JiraAsyncEnumerable.Pager<Issue> getNextPage = (startPageAt, cancellationToken) =>
                 issueService.GetSubTasksAsync(issueKey, maxIssues, startAt, cancellationToken);
 
-            return JiraAsyncEnumerable.Create(getNextPage, startAt);
+            return JiraAsyncEnumerable.Create(getNextPage, startAt, maxIssues);
         }
 
         public static IAsyncJiraQueryable<Issue> GetAsyncQueryable(this IIssueService issueService) =>

@@ -8,7 +8,7 @@ namespace Atlassian.Jira.AspNetCore
             JiraAsyncEnumerable.Pager<ProjectVersion> getNextPage = (startPageAt, cancellationToken) =>
                 project.GetPagedVersionsAsync(startPageAt, maxResults, cancellationToken);
 
-            return JiraAsyncEnumerable.Create(getNextPage, startAt);
+            return JiraAsyncEnumerable.Create(getNextPage, startAt, maxResults);
         }
     }
 }

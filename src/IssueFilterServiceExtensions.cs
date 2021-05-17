@@ -8,7 +8,7 @@ namespace Atlassian.Jira.AspNetCore
             JiraAsyncEnumerable.Pager<Issue> getNextPage = (startPageAt, cancellationToken) =>
                 filterService.GetIssuesFromFavoriteAsync(filterName, maxIssues, startAt, cancellationToken);
 
-            return JiraAsyncEnumerable.Create(getNextPage, startAt);
+            return JiraAsyncEnumerable.Create(getNextPage, startAt, maxIssues);
         }
     }
 }
