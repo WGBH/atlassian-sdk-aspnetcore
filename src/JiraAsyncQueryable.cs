@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
@@ -54,11 +53,11 @@ namespace Atlassian.Jira.AspNetCore
 
     class AsyncJiraQueryable<T> : IAsyncJiraQueryable<T>
     {
-        class NoopQueryProvider : IQueryProvider
+        class NoCanDoQueryProvider : IQueryProvider
         {
             readonly IIssueService _issueService;
 
-            public NoopQueryProvider(IIssueService issueService) =>
+            public NoCanDoQueryProvider(IIssueService issueService) =>
                 _issueService = issueService;
 
             public IQueryable CreateQuery(Expression expression) =>
@@ -85,6 +84,64 @@ namespace Atlassian.Jira.AspNetCore
             }
         }
 
+        class JqlResultsAsyncEnumerablePreparer : ExpressionVisitor
+        {
+            object? _selector;
+
+            public static IJqlResultsAsyncEnumerable<T> Prepare(IIssueService issueService, Expression expression) =>
+                new JqlResultsAsyncEnumerablePreparer().PrepareInternal(issueService, expression);
+
+            IJqlResultsAsyncEnumerable<T> PrepareInternal(IIssueService issueService, Expression expression)
+            {
+                var jql = new JqlExpressionVisitor().Process(Visit(expression));
+
+                JiraAsyncEnumerable.Pager<Issue> getNextPage = (startPageAt, cancellationToken) =>
+                    issueService.GetIssuesFromJqlAsync(jql.Expression, jql.NumberOfResults, startPageAt, cancellationToken);
+
+                // Determine the type of the selector (if any),
+                // and use it to return the appropriate IJqlResultsAsyncEnumerable.
+                return _selector switch
+                {
+                    null => (IJqlResultsAsyncEnumerable<T>)
+                        new JqlResultsAsyncEnumerable(getNextPage, jql.SkipResults ?? 0,
+                            jql.Expression, jql.NumberOfResults),
+
+                    Func<Issue, T> oneArgSelector =>
+                        new OneArgSelectorJqlResultsAsyncEnumerable<T>(getNextPage, jql.SkipResults ?? 0,
+                            jql.Expression, jql.NumberOfResults, oneArgSelector),
+
+                    Func<Issue, int, T> twoArgSelector =>
+                        new TwoArgSelectorJqlResultsAsyncEnumerable<T>(getNextPage, jql.SkipResults ?? 0,
+                            jql.Expression, jql.NumberOfResults, twoArgSelector),
+
+                    _ =>
+                        throw new NotSupportedException("The selector expression could not be compiled.")
+                };
+            }
+
+            protected override Expression VisitMethodCall(MethodCallExpression node)
+            {
+                // Examine the outermost method call. If this is Select,
+                // peel it off; it might be used to transform the issue.
+                if (node.Method.Name == nameof(Queryable.Select))
+                {
+                    Visit(node.Arguments[1]);
+
+                    return node.Arguments[0];
+                }
+
+                return node;
+            }
+
+            protected override Expression VisitLambda<TDelegate>(Expression<TDelegate> node)
+            {
+                if (typeof(T) != typeof(Issue))
+                    _selector = node.Compile()!;
+
+                return node;
+            }
+        }
+
         readonly IIssueService _issueService;
 
         public Expression Expression { get; }
@@ -103,40 +160,10 @@ namespace Atlassian.Jira.AspNetCore
 
         public Type ElementType => typeof(T);
 
-        public IQueryProvider Provider => new NoopQueryProvider(_issueService);
+        public IQueryProvider Provider => new NoCanDoQueryProvider(_issueService);
 
-        public IJqlResultsAsyncEnumerable<T> Prepare()
-        {
-            var jql = new JqlExpressionVisitor().Process(Expression);
-
-            JiraAsyncEnumerable.Pager<Issue> getNextPage = (startPageAt, cancellationToken) =>
-                _issueService.GetIssuesFromJqlAsync(jql.Expression, jql.NumberOfResults, startPageAt, cancellationToken);
-
-            if(Expression is MethodCallExpression selectExpression
-                && selectExpression.Method.Name == nameof(Queryable.Select) && typeof(T) != typeof(Issue))
-            {
-                var selectorExpression = ((UnaryExpression) selectExpression.Arguments.Last()).Operand;
-                if (selectorExpression is Expression<Func<Issue, T>> oneArgSelectorExpression)
-                {
-                    var selector = oneArgSelectorExpression.Compile();
-
-                    return new OneArgSelectorJqlResultsAsyncEnumerable<T>(
-                        getNextPage, jql.SkipResults ?? 0, jql.Expression, jql.NumberOfResults, selector);
-                }
-                else
-                {
-                    var selector = ((Expression<Func<Issue, int, T>>) selectorExpression).Compile();
-
-                    return new TwoArgSelectorJqlResultsAsyncEnumerable<T>(
-                        getNextPage, jql.SkipResults ?? 0, jql.Expression, jql.NumberOfResults, selector);
-                }
-            }
-
-            Debug.Assert(typeof(T) == typeof(Issue));
-
-            return (IJqlResultsAsyncEnumerable<T>)
-                new JqlResultsAsyncEnumerable(getNextPage, jql.SkipResults ?? 0, jql.Expression, jql.NumberOfResults);
-        }
+        public IJqlResultsAsyncEnumerable<T> Prepare() =>
+            JqlResultsAsyncEnumerablePreparer.Prepare(_issueService, Expression);
     }
 
     public static class AsyncJiraQueryableExtensions
