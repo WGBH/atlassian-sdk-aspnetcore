@@ -84,6 +84,7 @@ namespace Atlassian.Jira.AspNetCore
             {
                 foreach (var item in _currentPage!)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     i++;
                     yield return item;
                 }

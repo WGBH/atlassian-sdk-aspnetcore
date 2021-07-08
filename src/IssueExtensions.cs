@@ -1,5 +1,3 @@
-using Atlassian.Jira;
-
 namespace Atlassian.Jira.AspNetCore
 {
     public static class IssueExtensions

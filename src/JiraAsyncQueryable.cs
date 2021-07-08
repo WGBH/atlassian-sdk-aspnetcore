@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
+using System.Threading.Tasks;
 using Atlassian.Jira.Linq;
 
 namespace Atlassian.Jira.AspNetCore
@@ -19,9 +20,9 @@ namespace Atlassian.Jira.AspNetCore
             _selector = selector;
         }
 
-        new public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken)
+        new public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         {
-            await foreach(var issue in (JqlResultsAsyncEnumerable) this)
+            await foreach(var issue in ((JqlResultsAsyncEnumerable) this).WithCancellation(cancellationToken))
                 yield return _selector(issue);
         }
     }
@@ -37,11 +38,11 @@ namespace Atlassian.Jira.AspNetCore
             _selector = selector;
         }
 
-        new public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken)
+        new public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         {
             var i = 0;
 
-            await foreach (var issue in (JqlResultsAsyncEnumerable) this)
+            await foreach (var issue in ((JqlResultsAsyncEnumerable) this).WithCancellation(cancellationToken))
             {
                 yield return _selector(issue, i);
                 i++;
