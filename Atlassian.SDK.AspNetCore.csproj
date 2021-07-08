@@ -1,5 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Target Name="SetVersion" DependsOnTargets="GitInfo" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <!-- For when we are right at a tagged commit: -->
+      <Version Condition="$(GitCommits) == 0">$(GitBaseVersion)</Version>
+
+      <!-- For when we are past a tagged commit (i.e. WIP version): -->
+      <Version Condition="$(GitTag) != '' and $(GitCommits) &gt; 0">$(GitBaseVersion)-$(GitCommits)-g$(GitCommit)</Version>
+
+      <!-- For when there are no tags (i.e. no released version): -->
+      <Version Condition="$(GitTag) == ''">0.0.0-$(GitCommits)-g$(GitCommit)</Version>
+      <PackageVersion>$(Version)</PackageVersion>
+    </PropertyGroup>
+
+    <Message Importance="High" Text="Building version $(Version)" />
+  </Target>
+
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -10,5 +26,10 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
 
     <PackageReference Include="Atlassian.SDK" Version="12.4.0" />
+
+    <PackageReference Include="GitInfo" Version="2.1.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
 </Project>
