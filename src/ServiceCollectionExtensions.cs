@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Atlassian.Jira.OAuth;
 using Microsoft.Extensions.DependencyInjection;
 using JiraRoot = Atlassian.Jira.Jira;
@@ -7,7 +8,7 @@ namespace Atlassian.Jira.AspNetCore
 {
     static class ValidationHelper
     {
-        public static void EnsureNonNull<T>(string paramName, T? value) where T : class
+        public static void EnsureNonNull<T>(string paramName, [NotNull] T? value) where T : class
         {
             if (value == null)
                 throw new InvalidOperationException(paramName + " must not be null!");
@@ -21,6 +22,7 @@ namespace Atlassian.Jira.AspNetCore
         public string? Password { get; init; }
         public JiraRestClientSettings? RestClientSettings { get; init; }
 
+        [MemberNotNull(nameof(BaseUri))]
         internal void Validate()
         {
             ValidationHelper.EnsureNonNull(nameof(BaseUri), BaseUri);
@@ -34,10 +36,12 @@ namespace Atlassian.Jira.AspNetCore
         public string? ConsumerSecret { get; init; }
         public string? OAuthAccessToken { get; init; }
         public string? OAuthTokenSecret { get; init; }
-        public JiraOAuthSignatureMethod oAuthSignatureMethod { get; init; } =
+        public JiraOAuthSignatureMethod OAuthSignatureMethod { get; init; } =
             JiraOAuthSignatureMethod.RsaSha1;
         public JiraRestClientSettings? RestClientSettings { get; init; }
 
+        [MemberNotNull(nameof(BaseUri), nameof(ConsumerKey), nameof(ConsumerSecret),
+            nameof(OAuthAccessToken), nameof(OAuthTokenSecret))]
         internal void Validate()
         {
             ValidationHelper.EnsureNonNull(nameof(BaseUri), BaseUri);
@@ -90,7 +94,7 @@ namespace Atlassian.Jira.AspNetCore
             services.AddScoped(p =>
                 new ServiceProvider(JiraRoot.CreateRestClient
                 (
-                    url: options.BaseUri!.ToString(),
+                    url: options.BaseUri.ToString(),
                     username: options.Username,
                     password: options.Password,
                     settings: options.RestClientSettings
@@ -118,12 +122,12 @@ namespace Atlassian.Jira.AspNetCore
             services.AddScoped(p =>
                 new ServiceProvider(JiraRoot.CreateOAuthRestClient
                 (
-                    url: options.BaseUri!.ToString(),
+                    url: options.BaseUri.ToString(),
                     consumerKey: options.ConsumerKey,
                     consumerSecret: options.ConsumerSecret,
                     oAuthAccessToken: options.OAuthAccessToken,
                     oAuthTokenSecret : options.OAuthTokenSecret,
-                    oAuthSignatureMethod: options.oAuthSignatureMethod,
+                    oAuthSignatureMethod: options.OAuthSignatureMethod,
                     settings: options.RestClientSettings
                 )));
 
