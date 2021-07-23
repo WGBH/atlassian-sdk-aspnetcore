@@ -374,5 +374,122 @@ namespace Atlassian.Jira.JqlBuilder
 
         public static JqlField Field(int customFieldId) =>
             Field("cf[" + customFieldId + ']');
+
+        public static class Fields
+        {
+            public static readonly JqlField AffectedVersion
+                = new JqlField("affectedVersion");
+            public static readonly JqlField Approvals
+                = new JqlField("approvals");
+            public static readonly JqlField Assignee
+                = new JqlField("assignee");
+            public static readonly JqlField Attachments
+                = new JqlField("attachments");
+            public static readonly JqlField Category
+                = new JqlField("change-gating-type");
+            public static readonly JqlField ChangeGatingType
+                = new JqlField("category");
+            public static readonly JqlField Comment
+                = new JqlField("comment");
+            public static readonly JqlField Component
+                = new JqlField("component");
+            public static readonly JqlField Created
+                = new JqlField("created");
+            public static readonly JqlField Creator
+                = new JqlField("creator");
+            public static readonly JqlField CustomerRequestType
+                = new JqlField("Customer Request Type");
+            public static readonly JqlField Description
+                = new JqlField("description");
+            public static readonly JqlField Due
+                = new JqlField("due");
+            public static readonly JqlField Environment
+                = new JqlField("environment");
+            public static readonly JqlField EpicLink
+                = new JqlField("Epic Link");
+            public static readonly JqlField EpicName
+                = new JqlField("Epic Name");
+            public static readonly JqlField EpicStatus
+                = new JqlField("Epic Status");
+            public static readonly JqlField Filter
+                = new JqlField("filter");
+            public static readonly JqlField FixVersion
+                = new JqlField("fixVersion");
+            public static readonly JqlField IssueKey
+                = new JqlField("issueKey");
+            public static readonly JqlField IssueLinkType
+                = new JqlField("issueLinkType");
+            public static readonly JqlField IssueType
+                = new JqlField("issueType");
+            public static readonly JqlField Labels
+                = new JqlField("labels");
+            public static readonly JqlField LastViewed
+                = new JqlField("lastViewed");
+            public static readonly JqlField Level
+                = new JqlField("level");
+            public static readonly JqlField Organization
+                = new JqlField("organizations");
+            public static readonly JqlField OriginalEstimate
+                = new JqlField("originalEstimate");
+            public static readonly JqlField Parent
+                = new JqlField("parent");
+            public static readonly JqlField Priority
+                = new JqlField("priority");
+            public static readonly JqlField Project
+                = new JqlField("project");
+            public static readonly JqlField ProjectType
+                = new JqlField("projectType");
+            public static readonly JqlField RemainingEstimate
+                = new JqlField("remainingEstimate");
+            public static readonly JqlField Reporter
+                = new JqlField("reporter");
+            public static readonly JqlField RequestChannelType
+                = new JqlField("request-channel-type");
+            public static readonly JqlField RequestLastActivityTime
+                = new JqlField("request-last-activity-time");
+            public static readonly JqlField Resolution
+                = new JqlField("resolution");
+            public static readonly JqlField Resolved
+                = new JqlField("resolved");
+            public static readonly JqlField Sprint
+                = new JqlField("sprint");
+            public static readonly JqlField Status
+                = new JqlField("status");
+            public static readonly JqlField StatusCategory
+                = new JqlField("statusCategory");
+            public static readonly JqlField Summary
+                = new JqlField("summary");
+            public static readonly JqlField Text
+                = new JqlField("text");
+            public static readonly JqlField TimeToFirstResponse
+                = new JqlField("Time to first response");
+            public static readonly JqlField TimeToResolution
+                = new JqlField("Time to resolution");
+            public static readonly JqlField TimeSpent
+                = new JqlField("timeSpent");
+            public static readonly JqlField Updated
+                = new JqlField("updated");
+            public static readonly JqlField Voter
+                = new JqlField("voter");
+            public static readonly JqlField Votes
+                = new JqlField("votes");
+            public static readonly JqlField Watcher
+                = new JqlField("watcher");
+            public static readonly JqlField Watchers
+                = new JqlField("watchers");
+            public static readonly JqlField WorklogComment
+                = new JqlField("text");
+            public static readonly JqlField WorklogDate
+                = new JqlField("worklogDate");
+            public static readonly JqlField WorkRatio
+                = new JqlField("workRatio");
+        }
+
+        // copy references for convenience when used with 'import static ...Jql'
+        public static class Direction
+        {
+            public static readonly JqlOperator.Direction Ascending = JqlOperator.Direction.Ascending;
+            public static readonly JqlOperator.Direction Descending = JqlOperator.Direction.Descending;
+        }
     }
 }
