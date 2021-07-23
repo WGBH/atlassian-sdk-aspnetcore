@@ -55,9 +55,19 @@ namespace Atlassian.Jira.JqlBuilder
 
             public static readonly Multi In
                 = new Multi(nameof(In), "IN");
-
             public static readonly Multi NotIn
                 = new Multi(nameof(NotIn), "NOT IN");
+        }
+
+        public sealed class Direction : JqlOperator
+        {
+            Direction(string name, string value)
+                : base(name, value) { }
+
+            public static readonly Direction Ascending
+                = new Direction(nameof(Ascending), "ASC");
+            public static readonly Direction Descending
+                = new Direction(nameof(Descending), "DESC");
         }
 
         // This assumes the operator values are distinct across all subclasses
@@ -153,23 +163,29 @@ namespace Atlassian.Jira.JqlBuilder
                 HashCode.Combine(Field, Operator, Values);
         }
 
-        public OrderedJqlExpression OrderBy(JqlField field, bool descending = false) =>
-            new OrderedJqlExpression(this, new[] { new OrderedJqlExpression.OrderField(field, descending) });
+        public OrderedJqlExpression OrderBy(JqlField field, JqlOperator.Direction direction) =>
+            new OrderedJqlExpression(this, new[] { new OrderedJqlExpression.OrderField(field, direction) });
 
-        public OrderedJqlExpression OrderBy(string field, bool descending = false) =>
-            OrderBy(new JqlField(field), descending);
+        public OrderedJqlExpression OrderBy(JqlField field) =>
+            OrderBy(field, JqlOperator.Direction.Ascending);
 
-        public OrderedJqlExpression OrderBy(IEnumerable<(string, bool)> fields) =>
+        public OrderedJqlExpression OrderBy(string field, JqlOperator.Direction direction) =>
+            OrderBy(new JqlField(field), direction);
+
+        public OrderedJqlExpression OrderBy(string field) =>
+            OrderBy(field, JqlOperator.Direction.Ascending);
+
+        public OrderedJqlExpression OrderBy(IEnumerable<(string, JqlOperator.Direction)> fields) =>
             new OrderedJqlExpression(this, fields.Select(f => new OrderedJqlExpression.OrderField(new JqlField(f.Item1), f.Item2)));
 
-        public OrderedJqlExpression OrderBy(params (string, bool)[] fields) =>
-            OrderBy((IEnumerable<(string, bool)>) fields);
+        public OrderedJqlExpression OrderBy(params (string, JqlOperator.Direction)[] fields) =>
+            OrderBy((IEnumerable<(string, JqlOperator.Direction)>) fields);
 
-        public OrderedJqlExpression OrderBy(IEnumerable<(JqlField, bool)> fields) =>
+        public OrderedJqlExpression OrderBy(IEnumerable<(JqlField, JqlOperator.Direction)> fields) =>
             new OrderedJqlExpression(this, fields.Select(f => new OrderedJqlExpression.OrderField(f.Item1, f.Item2)));
 
-        public OrderedJqlExpression OrderBy(params (JqlField, bool)[] fields) =>
-            OrderBy((IEnumerable<(JqlField, bool)>) fields);
+        public OrderedJqlExpression OrderBy(params (JqlField, JqlOperator.Direction)[] fields) =>
+            OrderBy((IEnumerable<(JqlField, JqlOperator.Direction)>) fields);
     }
 
     public sealed class OrderedJqlExpression
@@ -177,19 +193,19 @@ namespace Atlassian.Jira.JqlBuilder
         public sealed class OrderField
         {
             public JqlField Field { get; }
-            public bool Descending { get; }
+            public JqlOperator.Direction Direction { get; }
 
-            internal OrderField(JqlField field, bool descending = false)
+            internal OrderField(JqlField field, JqlOperator.Direction direction)
             {
                 Field = field;
-                Descending = descending;
+                Direction = direction;
             }
 
             public override bool Equals(object? obj) =>
-                obj is OrderField other && Field.Equals(other.Field) && Descending == other.Descending;
+                obj is OrderField other && Field.Equals(other.Field) && Direction == other.Direction;
 
             public override int GetHashCode() =>
-                HashCode.Combine(Field, Descending);
+                HashCode.Combine(Field, Direction);
         }
 
         public JqlExpression Expression { get; }
@@ -203,7 +219,7 @@ namespace Atlassian.Jira.JqlBuilder
 
         public override string ToString() =>
             Expression.ToString() + " ORDER BY "
-                + String.Join(", ", Fields.Select(f => JqlExpression.EscapeValue(f.Field.Name) + (f.Descending? " DESC" : " ASC")));
+                + String.Join(", ", Fields.Select(f => JqlExpression.EscapeValue(f.Field.Name) + ' ' + f.Direction.Value));
 
         public override bool Equals(object? obj) =>
             obj is OrderedJqlExpression other && Expression.Equals(other.Expression)
