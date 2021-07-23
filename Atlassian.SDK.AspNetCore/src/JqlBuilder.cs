@@ -22,8 +22,22 @@ namespace Atlassian.Jira.JqlBuilder
             Logical(string name, string value)
                 : base(name, value) { }
 
-            public static Logical And = new Logical(nameof(And), "AND");
-            public static Logical Or = new Logical(nameof(Or), "OR");
+            public static Logical And
+                = new Logical(nameof(And), "AND");
+            public static Logical Or
+                = new Logical(nameof(Or), "OR");
+        }
+
+        public sealed class Existence : JqlOperator
+        {
+            Existence(string name, string value)
+                : base(name, value) { }
+
+            public static Existence IsEmpty
+                = new Existence(nameof(IsEmpty), "IS EMPTY");
+
+            public static Existence IsNotEmpty
+                = new Existence(nameof(IsNotEmpty), "IS NOT EMPTY");
         }
 
         public sealed class Binary : JqlOperator
@@ -94,13 +108,12 @@ namespace Atlassian.Jira.JqlBuilder
 
         public abstract override string ToString();
 
-        internal static string EscapeValue(object? value) =>
+        internal static string EscapeValue(object value) =>
             value switch
             {
                 DateTime dateTime => (dateTime == dateTime.Date)
                     ? dateTime.ToString("\\'yyyy/MM/dd\\'")
                     : dateTime.ToString("\\'yyyy/MM/dd HH:mm\\'"),
-                null => "null",
                 _ => "'" + value.ToString()!.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("'", "\\'") + "'"
             };
 
@@ -124,13 +137,33 @@ namespace Atlassian.Jira.JqlBuilder
                 HashCode.Combine(Operator, Expressions);
         }
 
+        public sealed class Existence : JqlFilterExpression
+        {
+            public JqlField Field { get; }
+            public new JqlOperator.Existence Operator => (JqlOperator.Existence) base.Operator;
+
+            internal Existence(JqlField field, JqlOperator.Existence oper) : base(oper)
+            {
+                Field = field;
+            }
+
+            public override string ToString() =>
+                EscapeValue(Field.Name) + ' ' + Operator.Value;
+
+            public override bool Equals(object? obj) =>
+                obj is Existence other && Field.Equals(other.Field) && Operator.Equals(other.Operator);
+
+            public override int GetHashCode() =>
+                HashCode.Combine(Field, Operator);
+        }
+
         public sealed class Binary : JqlFilterExpression
         {
             public JqlField Field { get; }
             public new JqlOperator.Binary Operator => (JqlOperator.Binary) base.Operator;
-            public object? Value { get; }
+            public object Value { get; }
 
-            internal Binary(JqlField field, JqlOperator.Binary oper, object? value) : base(oper)
+            internal Binary(JqlField field, JqlOperator.Binary oper, object value) : base(oper)
             {
                 Field = field;
                 Value = value;
@@ -249,6 +282,12 @@ namespace Atlassian.Jira.JqlBuilder
         public override int GetHashCode() =>
             Name.GetHashCode();
 
+        public JqlFilterExpression.Existence IsEmpty() =>
+            new JqlFilterExpression.Existence(this, JqlOperator.Existence.IsEmpty);
+
+        public JqlFilterExpression.Existence IsNotEmpty() =>
+            new JqlFilterExpression.Existence(this, JqlOperator.Existence.IsNotEmpty);
+
         public JqlFilterExpression.Multi In(IEnumerable<object> values) =>
             new JqlFilterExpression.Multi(this, JqlOperator.Multi.In, values);
 
@@ -267,10 +306,10 @@ namespace Atlassian.Jira.JqlBuilder
         public JqlFilterExpression.Binary NotLike(object value) =>
             new JqlFilterExpression.Binary(this, JqlOperator.Binary.NotLike, value);
 
-        public static JqlFilterExpression.Binary operator ==(JqlField field, object? value) =>
+        public static JqlFilterExpression.Binary operator ==(JqlField field, object value) =>
             new JqlFilterExpression.Binary(field, JqlOperator.Binary.Equal, value);
 
-        public static JqlFilterExpression.Binary operator !=(JqlField field, object? value) =>
+        public static JqlFilterExpression.Binary operator !=(JqlField field, object value) =>
             new JqlFilterExpression.Binary(field, JqlOperator.Binary.NotEqual, value);
 
         public static JqlFilterExpression.Binary operator >(JqlField field, object value) =>

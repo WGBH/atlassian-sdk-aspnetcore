@@ -34,6 +34,16 @@ namespace Atlassian.Jira.AspNetCore.Tests
         }
 
         [Fact]
+        public void ShouldBuildProperJqlExistence()
+        {
+            var jql1 = Field("assignee").IsEmpty();
+            Assert.Equal("'assignee' IS EMPTY", jql1.ToString());
+
+            var jql2 = Field("assignee").IsNotEmpty();
+            Assert.Equal("'assignee' IS NOT EMPTY", jql2.ToString());
+        }
+
+        [Fact]
         public void ShouldBuildProperJqlBinary()
         {
             var jql1 = Field("project") == "PROJ";
@@ -81,14 +91,11 @@ namespace Atlassian.Jira.AspNetCore.Tests
             var jql1 = Field("assignee") == "Bobby O'Shea";
             Assert.Equal("'assignee' = 'Bobby O\\'Shea'", jql1.ToString());
 
-            var jql2 = Field("assignee") == null;
-            Assert.Equal("'assignee' = null", jql2.ToString());
+            var jql2 = Field("created") == new DateTime(1984, 6, 3, 8, 20, 34);
+            Assert.Equal("'created' = '1984/06/03 08:20'", jql2.ToString());
 
-            var jql3 = Field("created") == new DateTime(1984, 6, 3, 8, 20, 34);
-            Assert.Equal("'created' = '1984/06/03 08:20'", jql3.ToString());
-
-            var jql4 = Field("created") == new DateTime(1984, 6, 3);
-            Assert.Equal("'created' = '1984/06/03'", jql4.ToString());
+            var jql3 = Field("created") == new DateTime(1984, 6, 3);
+            Assert.Equal("'created' = '1984/06/03'", jql3.ToString());
         }
 
         [Fact]
