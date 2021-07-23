@@ -241,6 +241,12 @@ namespace Atlassian.Jira.JqlBuilder
 
         public JqlOrderExpression OrderBy(params (JqlField, JqlOperator.Direction)[] fields) =>
             OrderBy((IEnumerable<(JqlField, JqlOperator.Direction)>) fields);
+
+        public static JqlFilterExpression.Logical operator &(JqlFilterExpression left, JqlFilterExpression right) =>
+            new JqlFilterExpression.Logical(JqlOperator.Logical.And, new[] {left, right});
+
+        public static JqlFilterExpression.Logical operator |(JqlFilterExpression left, JqlFilterExpression right) =>
+            new JqlFilterExpression.Logical(JqlOperator.Logical.Or, new[] {left, right});
     }
 
     public sealed class JqlOrderExpression : IJqlExpression
@@ -357,17 +363,17 @@ namespace Atlassian.Jira.JqlBuilder
 
     public static class Jql
     {
-        public static JqlFilterExpression.Logical And(IEnumerable<JqlFilterExpression> expressions) =>
+        public static JqlFilterExpression.Logical All(IEnumerable<JqlFilterExpression> expressions) =>
             new JqlFilterExpression.Logical(JqlOperator.Logical.And, expressions);
 
-        public static JqlFilterExpression.Logical And(params JqlFilterExpression[] expressions) =>
-            And((IEnumerable<JqlFilterExpression>)expressions);
+        public static JqlFilterExpression.Logical All(params JqlFilterExpression[] expressions) =>
+            All((IEnumerable<JqlFilterExpression>)expressions);
 
-        public static JqlFilterExpression.Logical Or(IEnumerable<JqlFilterExpression> expressions) =>
+        public static JqlFilterExpression.Logical Any(IEnumerable<JqlFilterExpression> expressions) =>
             new JqlFilterExpression.Logical(JqlOperator.Logical.Or, expressions);
 
-        public static JqlFilterExpression.Logical Or(params JqlFilterExpression[] expressions) =>
-            Or((IEnumerable<JqlFilterExpression>)expressions);
+        public static JqlFilterExpression.Logical Any(params JqlFilterExpression[] expressions) =>
+            Any((IEnumerable<JqlFilterExpression>)expressions);
 
         public static JqlField Field(string name) =>
             new JqlField(name);

@@ -11,9 +11,9 @@ namespace Atlassian.Jira.AspNetCore.Tests
     public class JqlBuilderTests
     {
         [Fact]
-        public void ShouldBuildProperJqlLogical()
+        public void ShouldBuildProperJqlAnyAll()
         {
-            var jql1 = And
+            var jql1 = All
             (
                 Fields.Project == "PROJ",
                 Fields.Assignee == "rambi_suzuki",
@@ -21,9 +21,9 @@ namespace Atlassian.Jira.AspNetCore.Tests
             ).ToString();
             Assert.Single(Regex.Matches(jql1, "PROJ"));
             Assert.Single(Regex.Matches(jql1, "rambi_suzuki"));
-            Assert.Matches("\\(('project' = 'PROJ'|'assignee' = 'rambi_suzuki') AND ('project' = 'PROJ'|'assignee' = 'rambi_suzuki')\\)", jql1);
+            Assert.Matches("^\\(('project' = 'PROJ'|'assignee' = 'rambi_suzuki') AND ('project' = 'PROJ'|'assignee' = 'rambi_suzuki')\\)$", jql1);
 
-            var jql2 = Or
+            var jql2 = Any
             (
                 Field("project") == "PROJ",
                 Fields.Assignee == "rambi_suzuki",
@@ -31,7 +31,40 @@ namespace Atlassian.Jira.AspNetCore.Tests
             ).ToString();
             Assert.Single(Regex.Matches(jql2, "PROJ"));
             Assert.Single(Regex.Matches(jql2, "rambi_suzuki"));
-            Assert.Matches("\\(('project' = 'PROJ'|'assignee' = 'rambi_suzuki') OR ('project' = 'PROJ'|'assignee' = 'rambi_suzuki')\\)", jql2);
+            Assert.Matches("^\\(('project' = 'PROJ'|'assignee' = 'rambi_suzuki') OR ('project' = 'PROJ'|'assignee' = 'rambi_suzuki')\\)$", jql2);
+        }
+
+        [Fact]
+        public void ShouldBuildProperJqlLogical()
+        {
+            // following operator precedence, we expect the ANDs to be evaluated before the OR
+            var jql =
+            (
+                Fields.Comment.IsNotEmpty() & Fields.Component.IsEmpty()
+                    | Fields.Attachments.IsEmpty() & Fields.Assignee.IsNotEmpty()
+            ).ToString();
+
+            var part1a = "'comment' IS NOT EMPTY";
+            var part1b = "'component' IS EMPTY";
+            var part2a = "'attachments' IS EMPTY";
+            var part2b = "'assignee' IS NOT EMPTY";
+
+            Assert.Single(Regex.Matches(jql, part1a));
+            Assert.Single(Regex.Matches(jql, part1b));
+            Assert.Single(Regex.Matches(jql, part2a));
+            Assert.Single(Regex.Matches(jql, part2b));
+
+            var part1 = $"\\(({part1a}|{part1b}) AND ({part1a}|{part1b})\\)";
+            var part2 = $"\\(({part2a}|{part2b}) AND ({part2a}|{part2b})\\)";
+
+            Assert.Single(Regex.Matches(jql, part1));
+            Assert.Single(Regex.Matches(jql, part2));
+
+            // expected output is similar to
+            // (("'comment' IS NOT EMPTY" AND "'component' IS EMPTY") OR ("'attachments' IS EMPTY" AND "'assignee' IS NOT EMPTY"))
+            var full = $"^\\(({part1}|{part2}) OR ({part1}|{part2})\\)$";
+
+            Assert.Matches(full, jql);
         }
 
         [Fact]
@@ -78,12 +111,12 @@ namespace Atlassian.Jira.AspNetCore.Tests
             var jql1 = Fields.Project.In("PROJ", "JORP", "PROJ").ToString();
             Assert.Single(Regex.Matches(jql1, "PROJ"));
             Assert.Single(Regex.Matches(jql1, "JORP"));
-            Assert.Matches("'project' IN \\('(PROJ|JORP)', '(PROJ|JORP)'\\)", jql1);
+            Assert.Matches("^'project' IN \\('(PROJ|JORP)', '(PROJ|JORP)'\\)$", jql1);
 
             var jql2 = Field("project").NotIn("PROJ", "JORP", "JORP").ToString();
             Assert.Single(Regex.Matches(jql2, "PROJ"));
             Assert.Single(Regex.Matches(jql2, "JORP"));
-            Assert.Matches("'project' NOT IN \\('(PROJ|JORP)', '(PROJ|JORP)'\\)", jql2);
+            Assert.Matches("^'project' NOT IN \\('(PROJ|JORP)', '(PROJ|JORP)'\\)$", jql2);
         }
 
         [Fact]
@@ -121,9 +154,13 @@ namespace Atlassian.Jira.AspNetCore.Tests
         {
             Assert.Throws<ArgumentNullException>(() => Field(null!));
 
-            Assert.Throws<ArgumentNullException>(() => And(null!));
+            Assert.Throws<ArgumentNullException>(() => All(null!));
 
-            Assert.Throws<ArgumentException>(() => Or(Field("foo") !=  "bar", null!));
+            Assert.Throws<ArgumentException>(() => Any(Field("foo") !=  "bar", null!));
+
+            Assert.Throws<ArgumentException>(() => Fields.Approvals.IsEmpty() & null!);
+
+            Assert.Throws<ArgumentException>(() => null! | Fields.Approvals.IsNotEmpty());
 
             Assert.Throws<ArgumentNullException>(() => ((JqlField)null!) == "bar");
 
