@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Atlassian.Jira.JqlBuilder;
 
 namespace Atlassian.Jira.AspNetCore
 {
@@ -13,6 +14,19 @@ namespace Atlassian.Jira.AspNetCore
                 .CountAsync(cancellationToken);
         }
 
+        public static ValueTask<int> QueryCountAsync(this IIssueService issueService, IJqlExpression jqlExpression,
+            CancellationToken cancellationToken = default)
+        {
+            return QueryCountAsync(issueService, jqlExpression.ToString(), cancellationToken);
+        }
+
+        public static Task<IPagedQueryResult<Issue>> GetIssuesFromJqlAsync(this IIssueService issueService,
+            IJqlExpression jqlExpression, int? maxIssues = null, int startAt = 0,
+            CancellationToken cancellationToken = default)
+        {
+            return issueService.GetIssuesFromJqlAsync(jqlExpression.ToString(), maxIssues, startAt, cancellationToken);
+        }
+
         public static IJqlResultsAsyncEnumerable<Issue> QueryIssuesAsyncEnum(this IIssueService issueService,
             string jqlString, int? maxIssues = null, int startAt = 0)
         {
@@ -22,7 +36,14 @@ namespace Atlassian.Jira.AspNetCore
             return new JqlResultsAsyncEnumerable(getNextPage, startAt, jqlString, maxIssues);
         }
 
-        public static IJqlResultsAsyncEnumerable<Issue> QueryIssuesAsyncEnum(this IIssueService issueService, IssueSearchOptions options)
+        public static IJqlResultsAsyncEnumerable<Issue> QueryIssuesAsyncEnum(this IIssueService issueService,
+            IJqlExpression jqlExpression, int? maxIssues = null, int startAt = 0)
+        {
+            return QueryIssuesAsyncEnum(issueService, jqlExpression.ToString(), maxIssues, startAt);
+        }
+
+        public static IJqlResultsAsyncEnumerable<Issue> QueryIssuesAsyncEnum(this IIssueService issueService,
+            IssueSearchOptions options)
         {
             JiraAsyncEnumerable.Pager<Issue> getNextPage = (startPageAt, cancellationToken) =>
             {
