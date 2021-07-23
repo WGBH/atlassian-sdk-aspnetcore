@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Atlassian.Jira.JqlBuilder;
 using Xunit;
 
 using static Atlassian.Jira.JqlBuilder.Jql;
@@ -86,7 +88,7 @@ namespace Atlassian.Jira.AspNetCore.Tests
         }
 
         [Fact]
-        public void ShouldEscapeJqlValuesProperly()
+        public void ShouldEscapeValuesProperly()
         {
             var jql1 = Field("assignee") == "Bobby O'Shea";
             Assert.Equal("'assignee' = 'Bobby O\\'Shea'", jql1.ToString());
@@ -109,6 +111,34 @@ namespace Atlassian.Jira.AspNetCore.Tests
 
             var jql3 = (Field("project") == "PROJ").OrderBy(("created", Ascending), ("assigned", Descending));
             Assert.Equal("'project' = 'PROJ' ORDER BY 'created' ASC, 'assigned' DESC", jql3.ToString());
+        }
+
+        [Fact]
+        public void ShouldGuardAgainstNullValues()
+        {
+            Assert.Throws<ArgumentNullException>(() => Field(null!));
+
+            Assert.Throws<ArgumentNullException>(() => And(null!));
+
+            Assert.Throws<ArgumentException>(() => Or(Field("foo") !=  "bar", null!));
+
+            Assert.Throws<ArgumentNullException>(() => ((JqlField)null!) == "bar");
+
+            Assert.Throws<ArgumentNullException>(() => Field("assignee") == null!);
+
+            Assert.Throws<ArgumentNullException>(() => Field("assignee").In(null!));
+
+            Assert.Throws<ArgumentException>(() => Field("assignee").NotIn("jorpo_demerrich", null!));
+
+            Assert.Throws<ArgumentNullException>(() => Field("foo").IsEmpty().OrderBy((JqlField) null!, Descending));
+
+            Assert.Throws<ArgumentNullException>(() => Field("foo").IsEmpty().OrderBy(Field("foo"), null!));
+
+            Assert.Throws<ArgumentNullException>(() => Field("foo").IsEmpty()
+                .OrderBy((IEnumerable<(JqlField, JqlOperator.Direction)>) null!));
+
+            Assert.Throws<ArgumentNullException>(() => Field("foo").IsEmpty()
+                .OrderBy((Field("foo"), Ascending), default((JqlField, JqlOperator.Direction))));
         }
     }
 }

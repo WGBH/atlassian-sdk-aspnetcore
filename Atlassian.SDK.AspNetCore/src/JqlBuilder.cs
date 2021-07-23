@@ -124,6 +124,11 @@ namespace Atlassian.Jira.JqlBuilder
 
             internal Logical(JqlOperator.Logical oper, IEnumerable<JqlFilterExpression> expressions) : base(oper)
             {
+                if (expressions == null)
+                    throw new ArgumentNullException(nameof(expressions));
+                if (expressions.Any(e => e == null))
+                    throw new ArgumentException("Collection must not contain the null value!", nameof(expressions));
+
                 Expressions = expressions.ToImmutableHashSet();
             }
 
@@ -165,6 +170,11 @@ namespace Atlassian.Jira.JqlBuilder
 
             internal Binary(JqlField field, JqlOperator.Binary oper, object value) : base(oper)
             {
+                if ((object) field == null)
+                    throw new ArgumentNullException(nameof(field));
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
                 Field = field;
                 Value = value;
             }
@@ -188,6 +198,11 @@ namespace Atlassian.Jira.JqlBuilder
 
             internal Multi(JqlField field, JqlOperator.Multi oper, IEnumerable<object> values) : base(oper)
             {
+                if (values == null)
+                    throw new ArgumentNullException(nameof(values));
+                if (values.Any(v => v == null))
+                    throw new ArgumentException("Collection must not contain the null value!", nameof(values));
+
                 Field = field;
                 Values = values.ToImmutableHashSet();
             }
@@ -237,6 +252,11 @@ namespace Atlassian.Jira.JqlBuilder
 
             internal OrderField(JqlField field, JqlOperator.Direction direction)
             {
+                if ((object) field == null)
+                    throw new ArgumentNullException(nameof(field));
+                if ((object) direction == null)
+                    throw new ArgumentNullException(nameof(direction));
+
                 Field = field;
                 Direction = direction;
             }
@@ -253,6 +273,11 @@ namespace Atlassian.Jira.JqlBuilder
 
         internal JqlOrderExpression(JqlFilterExpression expression, IEnumerable<OrderField> fields)
         {
+            if (fields == null)
+                throw new ArgumentNullException(nameof(fields));
+            if (fields.Any(f => f == null))
+                throw new ArgumentException("Collection must not contain the null value!", nameof(fields));
+
             Expression = expression;
             Fields = fields.ToImmutableList();
         }
@@ -273,8 +298,13 @@ namespace Atlassian.Jira.JqlBuilder
     {
         public string Name { get; }
 
-        internal JqlField(string name) =>
+        internal JqlField(string name)
+        {
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
             Name = name;
+        }
 
         public override bool Equals(object? obj) =>
             obj is JqlField other && Name == other.Name;
