@@ -93,6 +93,21 @@ namespace Atlassian.Jira.JqlBuilder
             Value.GetHashCode();
     }
 
+    static class JqlTextUtil
+    {
+        public static string EscapeValue(object value) =>
+            value switch
+            {
+                DateTime dt => '\'' + FormatDateTime(dt) + '\'',
+                _ => "'" + value.ToString()!.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("'", "\\'") + "'"
+            };
+
+        public static string FormatDateTime(DateTime dateTime) =>
+            (dateTime == dateTime.Date)
+                ? dateTime.ToString("yyyy/MM/dd")
+                : dateTime.ToString("yyyy/MM/dd HH:mm");
+    }
+
     public interface IJqlExpression
     {
         [return: NotNull]
@@ -107,15 +122,6 @@ namespace Atlassian.Jira.JqlBuilder
             Operator = oper;
 
         public abstract override string ToString();
-
-        internal static string EscapeValue(object value) =>
-            value switch
-            {
-                DateTime dateTime => (dateTime == dateTime.Date)
-                    ? dateTime.ToString("\\'yyyy/MM/dd\\'")
-                    : dateTime.ToString("\\'yyyy/MM/dd HH:mm\\'"),
-                _ => "'" + value.ToString()!.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("'", "\\'") + "'"
-            };
 
         public sealed class Logical : JqlFilterExpression
         {
@@ -153,7 +159,7 @@ namespace Atlassian.Jira.JqlBuilder
             }
 
             public override string ToString() =>
-                EscapeValue(Field.Name) + ' ' + Operator.Value;
+                JqlTextUtil.EscapeValue(Field.Name) + ' ' + Operator.Value;
 
             public override bool Equals(object? obj) =>
                 obj is Existence other && Field.Equals(other.Field) && Operator.Equals(other.Operator);
@@ -180,7 +186,7 @@ namespace Atlassian.Jira.JqlBuilder
             }
 
             public sealed override string ToString() =>
-                EscapeValue(Field.Name) + ' ' + Operator.Value + ' ' + EscapeValue(Value);
+                JqlTextUtil.EscapeValue(Field.Name) + ' ' + Operator.Value + ' ' + JqlTextUtil.EscapeValue(Value);
 
             public override bool Equals(object? obj) =>
                 obj is Binary other && Field.Equals(other.Field) && Operator.Equals(other.Operator)
@@ -208,7 +214,8 @@ namespace Atlassian.Jira.JqlBuilder
             }
 
             public override string ToString() =>
-                EscapeValue(Field.Name) + ' ' + Operator.Value +  " (" + String.Join(", ", Values.Select(v => EscapeValue(v))) + ")";
+                JqlTextUtil.EscapeValue(Field.Name) + ' ' + Operator.Value
+                    +  " (" + String.Join(", ", Values.Select(v => JqlTextUtil.EscapeValue(v))) + ")";
 
             public override bool Equals(object? obj) =>
                 obj is Multi other && Field.Equals(other.Field) && Operator.Equals(other.Operator)
@@ -290,7 +297,7 @@ namespace Atlassian.Jira.JqlBuilder
 
         public override string ToString() =>
             Expression.ToString() + " ORDER BY "
-                + String.Join(", ", Fields.Select(f => JqlFilterExpression.EscapeValue(f.Field.Name) + ' ' + f.Direction.Value));
+                + String.Join(", ", Fields.Select(f => JqlTextUtil.EscapeValue(f.Field.Name) + ' ' + f.Direction.Value));
 
         public override bool Equals(object? obj) =>
             obj is JqlOrderExpression other && Expression.Equals(other.Expression)
