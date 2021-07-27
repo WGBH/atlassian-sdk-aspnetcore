@@ -8,25 +8,25 @@ namespace Atlassian.Jira.JqlBuilder
 {
     public interface IJqlOperator
     {
-        string Name { get; }
+        string Type { get; }
         string Value { get; }
     }
 
     public abstract class JqlFilterOperator : IJqlOperator
     {
-        public string Name { get; }
+        public string Type { get; }
         public string Value { get; }
 
-        private protected JqlFilterOperator(string name, string value)
+        private protected JqlFilterOperator(string type, string value)
         {
-            Name = name;
+            Type = type;
             Value = value;
         }
 
-        public sealed class Logical : JqlFilterOperator
+        internal sealed class Logical : JqlFilterOperator
         {
-            Logical(string name, string value)
-                : base(name, value) { }
+            Logical(string type, string value)
+                : base(type, value) { }
 
             public static Logical And
                 = new Logical(nameof(And), "AND");
@@ -34,10 +34,10 @@ namespace Atlassian.Jira.JqlBuilder
                 = new Logical(nameof(Or), "OR");
         }
 
-        public sealed class Existence : JqlFilterOperator
+        internal sealed class Existence : JqlFilterOperator
         {
-            Existence(string name, string value)
-                : base(name, value) { }
+            Existence(string type, string value)
+                : base(type, value) { }
 
             public static Existence IsEmpty
                 = new Existence(nameof(IsEmpty), "IS EMPTY");
@@ -46,10 +46,10 @@ namespace Atlassian.Jira.JqlBuilder
                 = new Existence(nameof(IsNotEmpty), "IS NOT EMPTY");
         }
 
-        public sealed class Binary : JqlFilterOperator
+        internal sealed class Binary : JqlFilterOperator
         {
-            Binary(string name, string value)
-                : base(name, value) { }
+            Binary(string type, string value)
+                : base(type, value) { }
 
             public static readonly Binary Equal
                 = new Binary(nameof(Equal), "=");
@@ -69,10 +69,10 @@ namespace Atlassian.Jira.JqlBuilder
                 = new Binary(nameof(LessThanOrEqual), "<=");
         }
 
-        public sealed class Multi : JqlFilterOperator
+        internal sealed class Multi : JqlFilterOperator
         {
-            Multi(string name, string value)
-                : base(name, value) { }
+            Multi(string type, string value)
+                : base(type, value) { }
 
             public static readonly Multi In
                 = new Multi(nameof(In), "IN");
@@ -90,12 +90,12 @@ namespace Atlassian.Jira.JqlBuilder
 
     public sealed class JqlSortDirection : IJqlOperator
     {
-        public string Name { get; }
+        public string Type { get; }
         public string Value { get; }
 
-        private JqlSortDirection(string name, string value)
+        private JqlSortDirection(string type, string value)
         {
-            Name = name;
+            Type = type;
             Value = value;
         }
 
@@ -134,113 +134,115 @@ namespace Atlassian.Jira.JqlBuilder
 
     public abstract class JqlFilterExpression : IJqlExpression
     {
+        public string Type { get; }
         public JqlFilterOperator Operator { get; }
 
-        private protected JqlFilterExpression(JqlFilterOperator oper) =>
+        private protected JqlFilterExpression(string type, JqlFilterOperator oper)
+        {
+            Type = type;
             Operator = oper;
+        }
 
         public abstract override string ToString();
+        public abstract override bool Equals(object? obj);
+        public abstract override int GetHashCode();
 
-        public sealed class Logical : JqlFilterExpression
+        internal sealed class Logical : JqlFilterExpression
         {
-            public new JqlFilterOperator.Logical Operator => (JqlFilterOperator.Logical) base.Operator;
-            public IReadOnlySet<JqlFilterExpression> Expressions { get; }
+            readonly IReadOnlySet<JqlFilterExpression> _expressions;
 
-            internal Logical(JqlFilterOperator.Logical oper, IEnumerable<JqlFilterExpression> expressions) : base(oper)
+            internal Logical(JqlFilterOperator.Logical oper, IEnumerable<JqlFilterExpression> expressions)
+                : base(nameof(Logical), oper)
             {
                 if (expressions == null)
                     throw new ArgumentNullException(nameof(expressions));
                 if (expressions.Any(e => e == null))
                     throw new ArgumentException("Collection must not contain the null value!", nameof(expressions));
 
-                Expressions = expressions.ToImmutableHashSet();
+                _expressions = expressions.ToImmutableHashSet();
             }
 
             public override string ToString() =>
-                "(" + string.Join(" " + Operator.Value + " ", Expressions) + ")";
+                "(" + string.Join(" " + Operator.Value + " ", _expressions) + ")";
 
             public override bool Equals(object? obj) =>
-                obj is Logical other && Operator.Equals(other.Operator) && Expressions.SequenceEqual(other.Expressions);
+                obj is Logical other && Operator.Equals(other.Operator) && _expressions.SequenceEqual(other._expressions);
 
             public override int GetHashCode() =>
-                HashCode.Combine(Operator, Expressions);
+                HashCode.Combine(Operator, _expressions);
         }
 
-        public sealed class Existence : JqlFilterExpression
+        internal sealed class Existence : JqlFilterExpression
         {
-            public JqlField Field { get; }
-            public new JqlFilterOperator.Existence Operator => (JqlFilterOperator.Existence) base.Operator;
+            readonly JqlField _field;
 
-            internal Existence(JqlField field, JqlFilterOperator.Existence oper) : base(oper)
-            {
-                Field = field;
-            }
+            internal Existence(JqlField field, JqlFilterOperator.Existence oper) : base(nameof(Existence), oper) =>
+                _field = field;
 
             public override string ToString() =>
-                JqlTextUtil.EscapeValue(Field.Name) + ' ' + Operator.Value;
+                JqlTextUtil.EscapeValue(_field.Name) + ' ' + Operator.Value;
 
             public override bool Equals(object? obj) =>
-                obj is Existence other && Field.Equals(other.Field) && Operator.Equals(other.Operator);
+                obj is Existence other && _field.Equals(other._field) && Operator.Equals(other.Operator);
 
             public override int GetHashCode() =>
-                HashCode.Combine(Field, Operator);
+                HashCode.Combine(_field, Operator);
         }
 
-        public sealed class Binary : JqlFilterExpression
+        internal sealed class Binary : JqlFilterExpression
         {
-            public JqlField Field { get; }
-            public new JqlFilterOperator.Binary Operator => (JqlFilterOperator.Binary) base.Operator;
-            public object Value { get; }
+            readonly JqlField _field;
+            readonly object _value;
 
-            internal Binary(JqlField field, JqlFilterOperator.Binary oper, object value) : base(oper)
+            internal Binary(JqlField field, JqlFilterOperator.Binary oper, object value) : base(nameof(Binary), oper)
             {
                 if ((object) field == null)
                     throw new ArgumentNullException(nameof(field));
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
 
-                Field = field;
-                Value = value;
+                _field = field;
+                _value = value;
             }
 
             public sealed override string ToString() =>
-                JqlTextUtil.EscapeValue(Field.Name) + ' ' + Operator.Value + ' ' + JqlTextUtil.EscapeValue(Value);
+                JqlTextUtil.EscapeValue(_field.Name) + ' ' + Operator.Value + ' ' + JqlTextUtil.EscapeValue(_value);
 
             public override bool Equals(object? obj) =>
-                obj is Binary other && Field.Equals(other.Field) && Operator.Equals(other.Operator)
-                    && Object.Equals(Value, other.Value);
+                obj is Binary other && _field.Equals(other._field) && Operator.Equals(other.Operator)
+                    && Object.Equals(_value, other._value);
 
             public override int GetHashCode() =>
-                HashCode.Combine(Field, Operator, Value);
+                HashCode.Combine(_field, Operator, _value);
         }
 
-        public sealed class Multi : JqlFilterExpression
+        internal sealed class Multi : JqlFilterExpression
         {
-            public JqlField Field { get; }
-            public new JqlFilterOperator.Multi Operator => (JqlFilterOperator.Multi) base.Operator;
-            public IReadOnlySet<object> Values { get; }
+            readonly JqlField _field;
+            readonly IReadOnlySet<object> _values;
 
-            internal Multi(JqlField field, JqlFilterOperator.Multi oper, IEnumerable<object> values) : base(oper)
+            internal Multi(JqlField field, JqlFilterOperator.Multi oper, IEnumerable<object> values)
+                : base(nameof(Multi), oper)
             {
                 if (values == null)
                     throw new ArgumentNullException(nameof(values));
                 if (values.Any(v => v == null))
                     throw new ArgumentException("Collection must not contain the null value!", nameof(values));
 
-                Field = field;
-                Values = values.ToImmutableHashSet();
+                _field = field;
+                _values = values.ToImmutableHashSet();
             }
 
             public override string ToString() =>
-                JqlTextUtil.EscapeValue(Field.Name) + ' ' + Operator.Value
-                    +  " (" + String.Join(", ", Values.Select(v => JqlTextUtil.EscapeValue(v))) + ")";
+                JqlTextUtil.EscapeValue(_field.Name) + ' ' + Operator.Value
+                    +  " (" + String.Join(", ", _values.Select(v => JqlTextUtil.EscapeValue(v))) + ")";
 
             public override bool Equals(object? obj) =>
-                obj is Multi other && Field.Equals(other.Field) && Operator.Equals(other.Operator)
-                    && Values.SequenceEqual(other.Values);
+                obj is Multi other && _field.Equals(other._field) && Operator.Equals(other.Operator)
+                    && _values.SequenceEqual(other._values);
 
             public override int GetHashCode() =>
-                HashCode.Combine(Field, Operator, Values);
+                HashCode.Combine(_field, Operator, _values);
         }
 
         public JqlOrderExpression OrderBy(JqlField field, JqlSortDirection direction) =>
@@ -267,10 +269,10 @@ namespace Atlassian.Jira.JqlBuilder
         public JqlOrderExpression OrderBy(params (JqlField, JqlSortDirection)[] fields) =>
             OrderBy((IEnumerable<(JqlField, JqlSortDirection)>) fields);
 
-        public static JqlFilterExpression.Logical operator &(JqlFilterExpression left, JqlFilterExpression right) =>
+        public static JqlFilterExpression operator &(JqlFilterExpression left, JqlFilterExpression right) =>
             new JqlFilterExpression.Logical(JqlFilterOperator.Logical.And, new[] {left, right});
 
-        public static JqlFilterExpression.Logical operator |(JqlFilterExpression left, JqlFilterExpression right) =>
+        public static JqlFilterExpression operator |(JqlFilterExpression left, JqlFilterExpression right) =>
             new JqlFilterExpression.Logical(JqlFilterOperator.Logical.Or, new[] {left, right});
     }
 
@@ -343,61 +345,61 @@ namespace Atlassian.Jira.JqlBuilder
         public override int GetHashCode() =>
             Name.GetHashCode();
 
-        public JqlFilterExpression.Existence IsEmpty() =>
+        public JqlFilterExpression IsEmpty() =>
             new JqlFilterExpression.Existence(this, JqlFilterOperator.Existence.IsEmpty);
 
-        public JqlFilterExpression.Existence IsNotEmpty() =>
+        public JqlFilterExpression IsNotEmpty() =>
             new JqlFilterExpression.Existence(this, JqlFilterOperator.Existence.IsNotEmpty);
 
-        public JqlFilterExpression.Multi In(IEnumerable<object> values) =>
+        public JqlFilterExpression In(IEnumerable<object> values) =>
             new JqlFilterExpression.Multi(this, JqlFilterOperator.Multi.In, values);
 
-        public JqlFilterExpression.Multi In(params object[] values) =>
+        public JqlFilterExpression In(params object[] values) =>
             In((IEnumerable<object>) values);
 
-        public JqlFilterExpression.Multi NotIn(IEnumerable<object> values) =>
+        public JqlFilterExpression NotIn(IEnumerable<object> values) =>
             new JqlFilterExpression.Multi(this, JqlFilterOperator.Multi.NotIn, values);
 
-        public JqlFilterExpression.Multi NotIn(params object[] values) =>
+        public JqlFilterExpression NotIn(params object[] values) =>
             NotIn((IEnumerable<object>) values);
 
-        public JqlFilterExpression.Binary Like(object value) =>
+        public JqlFilterExpression Like(object value) =>
             new JqlFilterExpression.Binary(this, JqlFilterOperator.Binary.Like, value);
 
-        public JqlFilterExpression.Binary NotLike(object value) =>
+        public JqlFilterExpression NotLike(object value) =>
             new JqlFilterExpression.Binary(this, JqlFilterOperator.Binary.NotLike, value);
 
-        public static JqlFilterExpression.Binary operator ==(JqlField field, object value) =>
+        public static JqlFilterExpression operator ==(JqlField field, object value) =>
             new JqlFilterExpression.Binary(field, JqlFilterOperator.Binary.Equal, value);
 
-        public static JqlFilterExpression.Binary operator !=(JqlField field, object value) =>
+        public static JqlFilterExpression operator !=(JqlField field, object value) =>
             new JqlFilterExpression.Binary(field, JqlFilterOperator.Binary.NotEqual, value);
 
-        public static JqlFilterExpression.Binary operator >(JqlField field, object value) =>
+        public static JqlFilterExpression operator >(JqlField field, object value) =>
             new JqlFilterExpression.Binary(field, JqlFilterOperator.Binary.GreaterThan, value);
 
-        public static JqlFilterExpression.Binary operator >=(JqlField field, object value) =>
+        public static JqlFilterExpression operator >=(JqlField field, object value) =>
             new JqlFilterExpression.Binary(field, JqlFilterOperator.Binary.GreaterThanOrEqual, value);
 
-       public static JqlFilterExpression.Binary operator <(JqlField field, object value) =>
+       public static JqlFilterExpression operator <(JqlField field, object value) =>
             new JqlFilterExpression.Binary(field, JqlFilterOperator.Binary.LessThan, value);
 
-        public static JqlFilterExpression.Binary operator <=(JqlField field, object value) =>
+        public static JqlFilterExpression operator <=(JqlField field, object value) =>
             new JqlFilterExpression.Binary(field, JqlFilterOperator.Binary.LessThanOrEqual, value);
     }
 
     public static class Jql
     {
-        public static JqlFilterExpression.Logical All(IEnumerable<JqlFilterExpression> expressions) =>
+        public static JqlFilterExpression All(IEnumerable<JqlFilterExpression> expressions) =>
             new JqlFilterExpression.Logical(JqlFilterOperator.Logical.And, expressions);
 
-        public static JqlFilterExpression.Logical All(params JqlFilterExpression[] expressions) =>
+        public static JqlFilterExpression All(params JqlFilterExpression[] expressions) =>
             All((IEnumerable<JqlFilterExpression>)expressions);
 
-        public static JqlFilterExpression.Logical Any(IEnumerable<JqlFilterExpression> expressions) =>
+        public static JqlFilterExpression Any(IEnumerable<JqlFilterExpression> expressions) =>
             new JqlFilterExpression.Logical(JqlFilterOperator.Logical.Or, expressions);
 
-        public static JqlFilterExpression.Logical Any(params JqlFilterExpression[] expressions) =>
+        public static JqlFilterExpression Any(params JqlFilterExpression[] expressions) =>
             Any((IEnumerable<JqlFilterExpression>)expressions);
 
         public static JqlField Field(string name) =>
