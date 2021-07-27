@@ -167,7 +167,7 @@ namespace Atlassian.Jira.JqlBuilder
                 "(" + string.Join(" " + Operator.Value + " ", _expressions) + ")";
 
             public override bool Equals(object? obj) =>
-                obj is Logical other && Operator.Equals(other.Operator) && _expressions.SequenceEqual(other._expressions);
+                obj is Logical other && Operator.Equals(other.Operator) && _expressions.SetEquals(other._expressions);
 
             public override int GetHashCode() =>
                 HashCode.Combine(Operator, _expressions);
@@ -240,7 +240,7 @@ namespace Atlassian.Jira.JqlBuilder
 
             public override bool Equals(object? obj) =>
                 obj is MultiValue other && _field.Equals(other._field) && Operator.Equals(other.Operator)
-                    && _values.SequenceEqual(other._values);
+                    && _values.SetEquals(other._values);
 
             public override int GetHashCode() =>
                 HashCode.Combine(_field, Operator, _values);
