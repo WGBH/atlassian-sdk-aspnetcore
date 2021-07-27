@@ -120,7 +120,7 @@ namespace Atlassian.Jira.AspNetCore.Tests
         }
 
         [Fact]
-        public void ShouldBuildProperJqlMulti()
+        public void ShouldBuildProperJqlMultiValue()
         {
             var jql1 = Fields.Project.In("PROJ", "JORP", "PROJ").ToString();
             Assert.Single(Regex.Matches(jql1, "PROJ"));

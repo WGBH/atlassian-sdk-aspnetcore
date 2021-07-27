@@ -69,15 +69,15 @@ namespace Atlassian.Jira.JqlBuilder
                 = new Binary(nameof(LessThanOrEqual), "<=");
         }
 
-        internal sealed class Multi : JqlFilterOperator
+        internal sealed class MultiValue : JqlFilterOperator
         {
-            Multi(string type, string value)
+            MultiValue(string type, string value)
                 : base(type, value) { }
 
-            public static readonly Multi In
-                = new Multi(nameof(In), "IN");
-            public static readonly Multi NotIn
-                = new Multi(nameof(NotIn), "NOT IN");
+            public static readonly MultiValue In
+                = new MultiValue(nameof(In), "IN");
+            public static readonly MultiValue NotIn
+                = new MultiValue(nameof(NotIn), "NOT IN");
         }
 
         // This assumes the operator values are distinct across all subclasses
@@ -217,13 +217,13 @@ namespace Atlassian.Jira.JqlBuilder
                 HashCode.Combine(_field, Operator, _value);
         }
 
-        internal sealed class Multi : JqlFilterExpression
+        internal sealed class MultiValue : JqlFilterExpression
         {
             readonly JqlField _field;
             readonly IReadOnlySet<object> _values;
 
-            internal Multi(JqlField field, JqlFilterOperator.Multi oper, IEnumerable<object> values)
-                : base(nameof(Multi), oper)
+            internal MultiValue(JqlField field, JqlFilterOperator.MultiValue oper, IEnumerable<object> values)
+                : base(nameof(MultiValue), oper)
             {
                 if (values == null)
                     throw new ArgumentNullException(nameof(values));
@@ -239,35 +239,35 @@ namespace Atlassian.Jira.JqlBuilder
                     +  " (" + String.Join(", ", _values.Select(v => JqlTextUtil.EscapeValue(v))) + ")";
 
             public override bool Equals(object? obj) =>
-                obj is Multi other && _field.Equals(other._field) && Operator.Equals(other.Operator)
+                obj is MultiValue other && _field.Equals(other._field) && Operator.Equals(other.Operator)
                     && _values.SequenceEqual(other._values);
 
             public override int GetHashCode() =>
                 HashCode.Combine(_field, Operator, _values);
         }
 
-        public JqlOrderExpression OrderBy(JqlField field, JqlSortDirection direction) =>
-            new JqlOrderExpression(this, new[] { new JqlOrderExpression.OrderField(field, direction) });
+        public JqlSortExpression OrderBy(JqlField field, JqlSortDirection direction) =>
+            new JqlSortExpression(this, new[] { new JqlSortField(field, direction) });
 
-        public JqlOrderExpression OrderBy(JqlField field) =>
+        public JqlSortExpression OrderBy(JqlField field) =>
             OrderBy(field, JqlSortDirection.Ascending);
 
-        public JqlOrderExpression OrderBy(string field, JqlSortDirection direction) =>
+        public JqlSortExpression OrderBy(string field, JqlSortDirection direction) =>
             OrderBy(new JqlField.Simple(field), direction);
 
-        public JqlOrderExpression OrderBy(string field) =>
+        public JqlSortExpression OrderBy(string field) =>
             OrderBy(field, JqlSortDirection.Ascending);
 
-        public JqlOrderExpression OrderBy(IEnumerable<(string, JqlSortDirection)> fields) =>
-            new JqlOrderExpression(this, fields.Select(f => new JqlOrderExpression.OrderField(new JqlField.Simple(f.Item1), f.Item2)));
+        public JqlSortExpression OrderBy(IEnumerable<(string, JqlSortDirection)> fields) =>
+            new JqlSortExpression(this, fields.Select(f => new JqlSortField(new JqlField.Simple(f.Item1), f.Item2)));
 
-        public JqlOrderExpression OrderBy(params (string, JqlSortDirection)[] fields) =>
+        public JqlSortExpression OrderBy(params (string, JqlSortDirection)[] fields) =>
             OrderBy((IEnumerable<(string, JqlSortDirection)>) fields);
 
-        public JqlOrderExpression OrderBy(IEnumerable<(JqlField, JqlSortDirection)> fields) =>
-            new JqlOrderExpression(this, fields.Select(f => new JqlOrderExpression.OrderField(f.Item1, f.Item2)));
+        public JqlSortExpression OrderBy(IEnumerable<(JqlField, JqlSortDirection)> fields) =>
+            new JqlSortExpression(this, fields.Select(f => new JqlSortField(f.Item1, f.Item2)));
 
-        public JqlOrderExpression OrderBy(params (JqlField, JqlSortDirection)[] fields) =>
+        public JqlSortExpression OrderBy(params (JqlField, JqlSortDirection)[] fields) =>
             OrderBy((IEnumerable<(JqlField, JqlSortDirection)>) fields);
 
         public static JqlFilterExpression operator &(JqlFilterExpression left, JqlFilterExpression right) =>
@@ -277,35 +277,12 @@ namespace Atlassian.Jira.JqlBuilder
             new JqlFilterExpression.Logical(JqlFilterOperator.Logical.Or, new[] {left, right});
     }
 
-    public sealed class JqlOrderExpression : IJqlExpression
+    public sealed class JqlSortExpression : IJqlExpression
     {
-        public sealed class OrderField
-        {
-            public JqlField Field { get; }
-            public JqlSortDirection Direction { get; }
-
-            internal OrderField(JqlField field, JqlSortDirection direction)
-            {
-                if ((object) field == null)
-                    throw new ArgumentNullException(nameof(field));
-                if ((object) direction == null)
-                    throw new ArgumentNullException(nameof(direction));
-
-                Field = field;
-                Direction = direction;
-            }
-
-            public override bool Equals(object? obj) =>
-                obj is OrderField other && Field.Equals(other.Field) && Direction == other.Direction;
-
-            public override int GetHashCode() =>
-                HashCode.Combine(Field, Direction);
-        }
-
         public JqlFilterExpression Expression { get; }
-        public IReadOnlyList<OrderField> Fields { get; }
+        public IReadOnlyList<JqlSortField> Fields { get; }
 
-        internal JqlOrderExpression(JqlFilterExpression expression, IEnumerable<OrderField> fields)
+        internal JqlSortExpression(JqlFilterExpression expression, IEnumerable<JqlSortField> fields)
         {
             if (fields == null)
                 throw new ArgumentNullException(nameof(fields));
@@ -321,7 +298,7 @@ namespace Atlassian.Jira.JqlBuilder
                 + String.Join(", ", Fields.Select(f => f.Field.ToString() + ' ' + f.Direction.Value));
 
         public override bool Equals(object? obj) =>
-            obj is JqlOrderExpression other && Expression.Equals(other.Expression)
+            obj is JqlSortExpression other && Expression.Equals(other.Expression)
                 && Fields.SequenceEqual(other.Fields);
 
         public override int GetHashCode() =>
@@ -413,13 +390,13 @@ namespace Atlassian.Jira.JqlBuilder
             new JqlFilterExpression.Existence(this, JqlFilterOperator.Existence.IsNotEmpty);
 
         public JqlFilterExpression In(IEnumerable<object> values) =>
-            new JqlFilterExpression.Multi(this, JqlFilterOperator.Multi.In, values);
+            new JqlFilterExpression.MultiValue(this, JqlFilterOperator.MultiValue.In, values);
 
         public JqlFilterExpression In(params object[] values) =>
             In((IEnumerable<object>) values);
 
         public JqlFilterExpression NotIn(IEnumerable<object> values) =>
-            new JqlFilterExpression.Multi(this, JqlFilterOperator.Multi.NotIn, values);
+            new JqlFilterExpression.MultiValue(this, JqlFilterOperator.MultiValue.NotIn, values);
 
         public JqlFilterExpression NotIn(params object[] values) =>
             NotIn((IEnumerable<object>) values);
@@ -447,6 +424,29 @@ namespace Atlassian.Jira.JqlBuilder
 
         public static JqlFilterExpression operator <=(JqlField field, object value) =>
             new JqlFilterExpression.Binary(field, JqlFilterOperator.Binary.LessThanOrEqual, value);
+    }
+
+    public sealed class JqlSortField
+    {
+        public JqlField Field { get; }
+        public JqlSortDirection Direction { get; }
+
+        internal JqlSortField(JqlField field, JqlSortDirection direction)
+        {
+            if ((object) field == null)
+                throw new ArgumentNullException(nameof(field));
+            if ((object) direction == null)
+                throw new ArgumentNullException(nameof(direction));
+
+            Field = field;
+            Direction = direction;
+        }
+
+        public override bool Equals(object? obj) =>
+            obj is JqlSortField other && Field.Equals(other.Field) && Direction == other.Direction;
+
+        public override int GetHashCode() =>
+            HashCode.Combine(Field, Direction);
     }
 
     // Note: This class has a special case in JqlTextUtil.EscapeValue
