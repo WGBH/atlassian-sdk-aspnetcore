@@ -141,11 +141,11 @@ namespace Atlassian.Jira.AspNetCore.Tests
             var jql1 = (Field("project") == "PROJ").OrderBy("created");
             Assert.Equal("'project' = 'PROJ' ORDER BY 'created' ASC", jql1.ToString());
 
-            var jql2 = (Fields.Project== "PROJ").OrderBy("created", Direction.Descending);
+            var jql2 = (Fields.Project== "PROJ").OrderBy("created", SortDirection.Descending);
             Assert.Equal("'project' = 'PROJ' ORDER BY 'created' DESC", jql2.ToString());
 
             var jql3 = (Field("project") == "PROJ")
-                .OrderBy(("created", Direction.Ascending), ("assigned", Direction.Descending));
+                .OrderBy(("created", SortDirection.Ascending), ("assigned", SortDirection.Descending));
             Assert.Equal("'project' = 'PROJ' ORDER BY 'created' ASC, 'assigned' DESC", jql3.ToString());
         }
 
@@ -171,15 +171,15 @@ namespace Atlassian.Jira.AspNetCore.Tests
             Assert.Throws<ArgumentException>(() => Fields.Assignee.NotIn("jorpo_demerrich", null!));
 
             Assert.Throws<ArgumentNullException>(() => Field("foo").IsEmpty()
-                .OrderBy((JqlField) null!, Direction.Descending));
+                .OrderBy((JqlField) null!, SortDirection.Descending));
 
             Assert.Throws<ArgumentNullException>(() => Field("foo").IsEmpty().OrderBy(Field("foo"), null!));
 
             Assert.Throws<ArgumentNullException>(() => Field("foo").IsEmpty()
-                .OrderBy((IEnumerable<(JqlField, JqlOperator.Direction)>) null!));
+                .OrderBy((IEnumerable<(JqlField, JqlSortDirection)>) null!));
 
             Assert.Throws<ArgumentNullException>(() => Field("foo").IsEmpty()
-                .OrderBy((Field("foo"), Direction.Ascending), default((JqlField, JqlOperator.Direction))));
+                .OrderBy((Field("foo"), SortDirection.Ascending), default((JqlField, JqlSortDirection))));
         }
     }
 }

@@ -6,18 +6,24 @@ using System.Linq;
 
 namespace Atlassian.Jira.JqlBuilder
 {
-    public abstract class JqlOperator
+    public interface IJqlOperator
+    {
+        string Name { get; }
+        string Value { get; }
+    }
+
+    public abstract class JqlFilterOperator : IJqlOperator
     {
         public string Name { get; }
         public string Value { get; }
 
-        private protected JqlOperator(string name, string value)
+        private protected JqlFilterOperator(string name, string value)
         {
             Name = name;
             Value = value;
         }
 
-        public sealed class Logical : JqlOperator
+        public sealed class Logical : JqlFilterOperator
         {
             Logical(string name, string value)
                 : base(name, value) { }
@@ -28,7 +34,7 @@ namespace Atlassian.Jira.JqlBuilder
                 = new Logical(nameof(Or), "OR");
         }
 
-        public sealed class Existence : JqlOperator
+        public sealed class Existence : JqlFilterOperator
         {
             Existence(string name, string value)
                 : base(name, value) { }
@@ -40,7 +46,7 @@ namespace Atlassian.Jira.JqlBuilder
                 = new Existence(nameof(IsNotEmpty), "IS NOT EMPTY");
         }
 
-        public sealed class Binary : JqlOperator
+        public sealed class Binary : JqlFilterOperator
         {
             Binary(string name, string value)
                 : base(name, value) { }
@@ -63,7 +69,7 @@ namespace Atlassian.Jira.JqlBuilder
                 = new Binary(nameof(LessThanOrEqual), "<=");
         }
 
-        public sealed class Multi : JqlOperator
+        public sealed class Multi : JqlFilterOperator
         {
             Multi(string name, string value)
                 : base(name, value) { }
@@ -74,20 +80,32 @@ namespace Atlassian.Jira.JqlBuilder
                 = new Multi(nameof(NotIn), "NOT IN");
         }
 
-        public sealed class Direction : JqlOperator
-        {
-            Direction(string name, string value)
-                : base(name, value) { }
-
-            public static readonly Direction Ascending
-                = new Direction(nameof(Ascending), "ASC");
-            public static readonly Direction Descending
-                = new Direction(nameof(Descending), "DESC");
-        }
-
         // This assumes the operator values are distinct across all subclasses
         public override bool Equals(object? obj) =>
-            obj is JqlOperator other && Value == other.Value;
+            obj is JqlFilterOperator other && Value == other.Value;
+
+        public override int GetHashCode() =>
+            Value.GetHashCode();
+    }
+
+    public sealed class JqlSortDirection : IJqlOperator
+    {
+        public string Name { get; }
+        public string Value { get; }
+
+        private JqlSortDirection(string name, string value)
+        {
+            Name = name;
+            Value = value;
+        }
+
+        public static readonly JqlSortDirection Ascending
+            = new JqlSortDirection(nameof(Ascending), "ASC");
+        public static readonly JqlSortDirection Descending
+            = new JqlSortDirection(nameof(Descending), "DESC");
+
+        public override bool Equals(object? obj) =>
+            obj is JqlSortDirection other && Value == other.Value;
 
         public override int GetHashCode() =>
             Value.GetHashCode();
@@ -116,19 +134,19 @@ namespace Atlassian.Jira.JqlBuilder
 
     public abstract class JqlFilterExpression : IJqlExpression
     {
-        public JqlOperator Operator { get; }
+        public JqlFilterOperator Operator { get; }
 
-        private protected JqlFilterExpression(JqlOperator oper) =>
+        private protected JqlFilterExpression(JqlFilterOperator oper) =>
             Operator = oper;
 
         public abstract override string ToString();
 
         public sealed class Logical : JqlFilterExpression
         {
-            public new JqlOperator.Logical Operator => (JqlOperator.Logical) base.Operator;
+            public new JqlFilterOperator.Logical Operator => (JqlFilterOperator.Logical) base.Operator;
             public IReadOnlySet<JqlFilterExpression> Expressions { get; }
 
-            internal Logical(JqlOperator.Logical oper, IEnumerable<JqlFilterExpression> expressions) : base(oper)
+            internal Logical(JqlFilterOperator.Logical oper, IEnumerable<JqlFilterExpression> expressions) : base(oper)
             {
                 if (expressions == null)
                     throw new ArgumentNullException(nameof(expressions));
@@ -151,9 +169,9 @@ namespace Atlassian.Jira.JqlBuilder
         public sealed class Existence : JqlFilterExpression
         {
             public JqlField Field { get; }
-            public new JqlOperator.Existence Operator => (JqlOperator.Existence) base.Operator;
+            public new JqlFilterOperator.Existence Operator => (JqlFilterOperator.Existence) base.Operator;
 
-            internal Existence(JqlField field, JqlOperator.Existence oper) : base(oper)
+            internal Existence(JqlField field, JqlFilterOperator.Existence oper) : base(oper)
             {
                 Field = field;
             }
@@ -171,10 +189,10 @@ namespace Atlassian.Jira.JqlBuilder
         public sealed class Binary : JqlFilterExpression
         {
             public JqlField Field { get; }
-            public new JqlOperator.Binary Operator => (JqlOperator.Binary) base.Operator;
+            public new JqlFilterOperator.Binary Operator => (JqlFilterOperator.Binary) base.Operator;
             public object Value { get; }
 
-            internal Binary(JqlField field, JqlOperator.Binary oper, object value) : base(oper)
+            internal Binary(JqlField field, JqlFilterOperator.Binary oper, object value) : base(oper)
             {
                 if ((object) field == null)
                     throw new ArgumentNullException(nameof(field));
@@ -199,10 +217,10 @@ namespace Atlassian.Jira.JqlBuilder
         public sealed class Multi : JqlFilterExpression
         {
             public JqlField Field { get; }
-            public new JqlOperator.Multi Operator => (JqlOperator.Multi) base.Operator;
+            public new JqlFilterOperator.Multi Operator => (JqlFilterOperator.Multi) base.Operator;
             public IReadOnlySet<object> Values { get; }
 
-            internal Multi(JqlField field, JqlOperator.Multi oper, IEnumerable<object> values) : base(oper)
+            internal Multi(JqlField field, JqlFilterOperator.Multi oper, IEnumerable<object> values) : base(oper)
             {
                 if (values == null)
                     throw new ArgumentNullException(nameof(values));
@@ -225,35 +243,35 @@ namespace Atlassian.Jira.JqlBuilder
                 HashCode.Combine(Field, Operator, Values);
         }
 
-        public JqlOrderExpression OrderBy(JqlField field, JqlOperator.Direction direction) =>
+        public JqlOrderExpression OrderBy(JqlField field, JqlSortDirection direction) =>
             new JqlOrderExpression(this, new[] { new JqlOrderExpression.OrderField(field, direction) });
 
         public JqlOrderExpression OrderBy(JqlField field) =>
-            OrderBy(field, JqlOperator.Direction.Ascending);
+            OrderBy(field, JqlSortDirection.Ascending);
 
-        public JqlOrderExpression OrderBy(string field, JqlOperator.Direction direction) =>
+        public JqlOrderExpression OrderBy(string field, JqlSortDirection direction) =>
             OrderBy(new JqlField(field), direction);
 
         public JqlOrderExpression OrderBy(string field) =>
-            OrderBy(field, JqlOperator.Direction.Ascending);
+            OrderBy(field, JqlSortDirection.Ascending);
 
-        public JqlOrderExpression OrderBy(IEnumerable<(string, JqlOperator.Direction)> fields) =>
+        public JqlOrderExpression OrderBy(IEnumerable<(string, JqlSortDirection)> fields) =>
             new JqlOrderExpression(this, fields.Select(f => new JqlOrderExpression.OrderField(new JqlField(f.Item1), f.Item2)));
 
-        public JqlOrderExpression OrderBy(params (string, JqlOperator.Direction)[] fields) =>
-            OrderBy((IEnumerable<(string, JqlOperator.Direction)>) fields);
+        public JqlOrderExpression OrderBy(params (string, JqlSortDirection)[] fields) =>
+            OrderBy((IEnumerable<(string, JqlSortDirection)>) fields);
 
-        public JqlOrderExpression OrderBy(IEnumerable<(JqlField, JqlOperator.Direction)> fields) =>
+        public JqlOrderExpression OrderBy(IEnumerable<(JqlField, JqlSortDirection)> fields) =>
             new JqlOrderExpression(this, fields.Select(f => new JqlOrderExpression.OrderField(f.Item1, f.Item2)));
 
-        public JqlOrderExpression OrderBy(params (JqlField, JqlOperator.Direction)[] fields) =>
-            OrderBy((IEnumerable<(JqlField, JqlOperator.Direction)>) fields);
+        public JqlOrderExpression OrderBy(params (JqlField, JqlSortDirection)[] fields) =>
+            OrderBy((IEnumerable<(JqlField, JqlSortDirection)>) fields);
 
         public static JqlFilterExpression.Logical operator &(JqlFilterExpression left, JqlFilterExpression right) =>
-            new JqlFilterExpression.Logical(JqlOperator.Logical.And, new[] {left, right});
+            new JqlFilterExpression.Logical(JqlFilterOperator.Logical.And, new[] {left, right});
 
         public static JqlFilterExpression.Logical operator |(JqlFilterExpression left, JqlFilterExpression right) =>
-            new JqlFilterExpression.Logical(JqlOperator.Logical.Or, new[] {left, right});
+            new JqlFilterExpression.Logical(JqlFilterOperator.Logical.Or, new[] {left, right});
     }
 
     public sealed class JqlOrderExpression : IJqlExpression
@@ -261,9 +279,9 @@ namespace Atlassian.Jira.JqlBuilder
         public sealed class OrderField
         {
             public JqlField Field { get; }
-            public JqlOperator.Direction Direction { get; }
+            public JqlSortDirection Direction { get; }
 
-            internal OrderField(JqlField field, JqlOperator.Direction direction)
+            internal OrderField(JqlField field, JqlSortDirection direction)
             {
                 if ((object) field == null)
                     throw new ArgumentNullException(nameof(field));
@@ -326,58 +344,58 @@ namespace Atlassian.Jira.JqlBuilder
             Name.GetHashCode();
 
         public JqlFilterExpression.Existence IsEmpty() =>
-            new JqlFilterExpression.Existence(this, JqlOperator.Existence.IsEmpty);
+            new JqlFilterExpression.Existence(this, JqlFilterOperator.Existence.IsEmpty);
 
         public JqlFilterExpression.Existence IsNotEmpty() =>
-            new JqlFilterExpression.Existence(this, JqlOperator.Existence.IsNotEmpty);
+            new JqlFilterExpression.Existence(this, JqlFilterOperator.Existence.IsNotEmpty);
 
         public JqlFilterExpression.Multi In(IEnumerable<object> values) =>
-            new JqlFilterExpression.Multi(this, JqlOperator.Multi.In, values);
+            new JqlFilterExpression.Multi(this, JqlFilterOperator.Multi.In, values);
 
         public JqlFilterExpression.Multi In(params object[] values) =>
             In((IEnumerable<object>) values);
 
         public JqlFilterExpression.Multi NotIn(IEnumerable<object> values) =>
-            new JqlFilterExpression.Multi(this, JqlOperator.Multi.NotIn, values);
+            new JqlFilterExpression.Multi(this, JqlFilterOperator.Multi.NotIn, values);
 
         public JqlFilterExpression.Multi NotIn(params object[] values) =>
             NotIn((IEnumerable<object>) values);
 
         public JqlFilterExpression.Binary Like(object value) =>
-            new JqlFilterExpression.Binary(this, JqlOperator.Binary.Like, value);
+            new JqlFilterExpression.Binary(this, JqlFilterOperator.Binary.Like, value);
 
         public JqlFilterExpression.Binary NotLike(object value) =>
-            new JqlFilterExpression.Binary(this, JqlOperator.Binary.NotLike, value);
+            new JqlFilterExpression.Binary(this, JqlFilterOperator.Binary.NotLike, value);
 
         public static JqlFilterExpression.Binary operator ==(JqlField field, object value) =>
-            new JqlFilterExpression.Binary(field, JqlOperator.Binary.Equal, value);
+            new JqlFilterExpression.Binary(field, JqlFilterOperator.Binary.Equal, value);
 
         public static JqlFilterExpression.Binary operator !=(JqlField field, object value) =>
-            new JqlFilterExpression.Binary(field, JqlOperator.Binary.NotEqual, value);
+            new JqlFilterExpression.Binary(field, JqlFilterOperator.Binary.NotEqual, value);
 
         public static JqlFilterExpression.Binary operator >(JqlField field, object value) =>
-            new JqlFilterExpression.Binary(field, JqlOperator.Binary.GreaterThan, value);
+            new JqlFilterExpression.Binary(field, JqlFilterOperator.Binary.GreaterThan, value);
 
         public static JqlFilterExpression.Binary operator >=(JqlField field, object value) =>
-            new JqlFilterExpression.Binary(field, JqlOperator.Binary.GreaterThanOrEqual, value);
+            new JqlFilterExpression.Binary(field, JqlFilterOperator.Binary.GreaterThanOrEqual, value);
 
        public static JqlFilterExpression.Binary operator <(JqlField field, object value) =>
-            new JqlFilterExpression.Binary(field, JqlOperator.Binary.LessThan, value);
+            new JqlFilterExpression.Binary(field, JqlFilterOperator.Binary.LessThan, value);
 
         public static JqlFilterExpression.Binary operator <=(JqlField field, object value) =>
-            new JqlFilterExpression.Binary(field, JqlOperator.Binary.LessThanOrEqual, value);
+            new JqlFilterExpression.Binary(field, JqlFilterOperator.Binary.LessThanOrEqual, value);
     }
 
     public static class Jql
     {
         public static JqlFilterExpression.Logical All(IEnumerable<JqlFilterExpression> expressions) =>
-            new JqlFilterExpression.Logical(JqlOperator.Logical.And, expressions);
+            new JqlFilterExpression.Logical(JqlFilterOperator.Logical.And, expressions);
 
         public static JqlFilterExpression.Logical All(params JqlFilterExpression[] expressions) =>
             All((IEnumerable<JqlFilterExpression>)expressions);
 
         public static JqlFilterExpression.Logical Any(IEnumerable<JqlFilterExpression> expressions) =>
-            new JqlFilterExpression.Logical(JqlOperator.Logical.Or, expressions);
+            new JqlFilterExpression.Logical(JqlFilterOperator.Logical.Or, expressions);
 
         public static JqlFilterExpression.Logical Any(params JqlFilterExpression[] expressions) =>
             Any((IEnumerable<JqlFilterExpression>)expressions);
@@ -499,10 +517,10 @@ namespace Atlassian.Jira.JqlBuilder
         }
 
         // copy references for convenience when used with 'import static ...Jql'
-        public static class Direction
+        public static class SortDirection
         {
-            public static readonly JqlOperator.Direction Ascending = JqlOperator.Direction.Ascending;
-            public static readonly JqlOperator.Direction Descending = JqlOperator.Direction.Descending;
+            public static readonly JqlSortDirection Ascending = JqlSortDirection.Ascending;
+            public static readonly JqlSortDirection Descending = JqlSortDirection.Descending;
         }
     }
 }
