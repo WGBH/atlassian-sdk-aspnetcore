@@ -180,7 +180,7 @@ namespace Atlassian.Jira.JqlBuilder
                 _field = field;
 
             public override string ToString() =>
-                JqlTextUtil.EscapeValue(_field.Name) + ' ' + Operator.Value;
+                _field.ToString() + ' ' + Operator.Value;
 
             public override bool Equals(object? obj) =>
                 obj is Existence other && _field.Equals(other._field) && Operator.Equals(other.Operator);
@@ -206,7 +206,7 @@ namespace Atlassian.Jira.JqlBuilder
             }
 
             public sealed override string ToString() =>
-                JqlTextUtil.EscapeValue(_field.Name) + ' ' + Operator.Value + ' ' + JqlTextUtil.EscapeValue(_value);
+                _field.ToString() + ' ' + Operator.Value + ' ' + JqlTextUtil.EscapeValue(_value);
 
             public override bool Equals(object? obj) =>
                 obj is Binary other && _field.Equals(other._field) && Operator.Equals(other.Operator)
@@ -234,7 +234,7 @@ namespace Atlassian.Jira.JqlBuilder
             }
 
             public override string ToString() =>
-                JqlTextUtil.EscapeValue(_field.Name) + ' ' + Operator.Value
+                _field.ToString() + ' ' + Operator.Value
                     +  " (" + String.Join(", ", _values.Select(v => JqlTextUtil.EscapeValue(v))) + ")";
 
             public override bool Equals(object? obj) =>
@@ -252,13 +252,13 @@ namespace Atlassian.Jira.JqlBuilder
             OrderBy(field, JqlSortDirection.Ascending);
 
         public JqlOrderExpression OrderBy(string field, JqlSortDirection direction) =>
-            OrderBy(new JqlField(field), direction);
+            OrderBy(new JqlField.Simple(field), direction);
 
         public JqlOrderExpression OrderBy(string field) =>
             OrderBy(field, JqlSortDirection.Ascending);
 
         public JqlOrderExpression OrderBy(IEnumerable<(string, JqlSortDirection)> fields) =>
-            new JqlOrderExpression(this, fields.Select(f => new JqlOrderExpression.OrderField(new JqlField(f.Item1), f.Item2)));
+            new JqlOrderExpression(this, fields.Select(f => new JqlOrderExpression.OrderField(new JqlField.Simple(f.Item1), f.Item2)));
 
         public JqlOrderExpression OrderBy(params (string, JqlSortDirection)[] fields) =>
             OrderBy((IEnumerable<(string, JqlSortDirection)>) fields);
@@ -317,7 +317,7 @@ namespace Atlassian.Jira.JqlBuilder
 
         public override string ToString() =>
             Expression.ToString() + " ORDER BY "
-                + String.Join(", ", Fields.Select(f => JqlTextUtil.EscapeValue(f.Field.Name) + ' ' + f.Direction.Value));
+                + String.Join(", ", Fields.Select(f => f.Field.ToString() + ' ' + f.Direction.Value));
 
         public override bool Equals(object? obj) =>
             obj is JqlOrderExpression other && Expression.Equals(other.Expression)
@@ -327,23 +327,83 @@ namespace Atlassian.Jira.JqlBuilder
             HashCode.Combine(Expression, Fields);
     }
 
-    public sealed class JqlField
+    public abstract class JqlField
     {
-        public string Name { get; }
+        public string Type { get; }
+        public abstract string Name { get; }
 
-        internal JqlField(string name)
+        private protected JqlField(string type) =>
+            Type = type;
+
+        public abstract override string ToString();
+        public abstract override bool Equals(object? obj);
+        public abstract override int GetHashCode();
+
+        internal sealed class Simple : JqlField
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            public override String Name { get; }
 
-            Name = name;
+            internal Simple(string name) : base(nameof(Simple))
+            {
+                if (name == null)
+                    throw new ArgumentNullException(nameof(name));
+
+                Name = name;
+            }
+
+            public override string ToString() =>
+                JqlTextUtil.EscapeValue(Name);
+
+            public override bool Equals(object? obj) =>
+                obj is JqlField other && Name == other.Name;
+
+            public override int GetHashCode() =>
+                Name.GetHashCode();
         }
 
-        public override bool Equals(object? obj) =>
-            obj is JqlField other && Name == other.Name;
+        internal sealed class Custom : JqlField
+        {
+            readonly int _id;
 
-        public override int GetHashCode() =>
-            Name.GetHashCode();
+            public override string Name =>
+                ToString();
+
+            internal Custom(int id) : base(nameof(Custom)) =>
+                _id = id;
+
+            public override string ToString() =>
+                "cf[" + _id + ']';
+
+            public override bool Equals(object? obj) =>
+                obj is Custom other && _id == other._id;
+
+            public override int GetHashCode() =>
+                _id;
+        }
+
+        internal sealed class Development : JqlField
+        {
+            readonly string _subscript;
+            readonly string _property;
+
+            public override string Name =>
+                ToString();
+
+            internal Development(string subscript, string property) : base(nameof(Development))
+            {
+                _subscript = subscript;
+                _property = property;
+            }
+
+            public override string ToString() =>
+                "Development[" + _subscript + "]." + _property;
+
+            public override bool Equals(object? obj) =>
+                obj is Development other && _subscript == other._subscript && _property == other._property;
+
+            public override int GetHashCode() =>
+                HashCode.Combine(_subscript, _property);
+        }
 
         public JqlFilterExpression IsEmpty() =>
             new JqlFilterExpression.Existence(this, JqlFilterOperator.Existence.IsEmpty);
@@ -403,119 +463,188 @@ namespace Atlassian.Jira.JqlBuilder
             Any((IEnumerable<JqlFilterExpression>)expressions);
 
         public static JqlField Field(string name) =>
-            new JqlField(name);
+            new JqlField.Simple(name);
 
         public static JqlField Field(int customFieldId) =>
-            Field("cf[" + customFieldId + ']');
+            new JqlField.Custom(customFieldId);
 
         public static class Fields
         {
             public static readonly JqlField AffectedVersion
-                = new JqlField("affectedVersion");
+                = new JqlField.Simple("affectedVersion");
             public static readonly JqlField Approvals
-                = new JqlField("approvals");
+                = new JqlField.Simple("approvals");
             public static readonly JqlField Assignee
-                = new JqlField("assignee");
+                = new JqlField.Simple("assignee");
             public static readonly JqlField Attachments
-                = new JqlField("attachments");
+                = new JqlField.Simple("attachments");
             public static readonly JqlField Category
-                = new JqlField("change-gating-type");
+                = new JqlField.Simple("change-gating-type");
             public static readonly JqlField ChangeGatingType
-                = new JqlField("category");
+                = new JqlField.Simple("category");
             public static readonly JqlField Comment
-                = new JqlField("comment");
+                = new JqlField.Simple("comment");
             public static readonly JqlField Component
-                = new JqlField("component");
+                = new JqlField.Simple("component");
             public static readonly JqlField Created
-                = new JqlField("created");
+                = new JqlField.Simple("created");
             public static readonly JqlField Creator
-                = new JqlField("creator");
+                = new JqlField.Simple("creator");
             public static readonly JqlField CustomerRequestType
-                = new JqlField("Customer Request Type");
+                = new JqlField.Simple("Customer Request Type");
             public static readonly JqlField Description
-                = new JqlField("description");
+                = new JqlField.Simple("description");
             public static readonly JqlField Due
-                = new JqlField("due");
+                = new JqlField.Simple("due");
             public static readonly JqlField Environment
-                = new JqlField("environment");
+                = new JqlField.Simple("environment");
             public static readonly JqlField EpicLink
-                = new JqlField("Epic Link");
+                = new JqlField.Simple("Epic Link");
             public static readonly JqlField EpicName
-                = new JqlField("Epic Name");
+                = new JqlField.Simple("Epic Name");
             public static readonly JqlField EpicStatus
-                = new JqlField("Epic Status");
+                = new JqlField.Simple("Epic Status");
             public static readonly JqlField Filter
-                = new JqlField("filter");
+                = new JqlField.Simple("filter");
             public static readonly JqlField FixVersion
-                = new JqlField("fixVersion");
+                = new JqlField.Simple("fixVersion");
             public static readonly JqlField IssueKey
-                = new JqlField("issueKey");
+                = new JqlField.Simple("issueKey");
             public static readonly JqlField IssueLinkType
-                = new JqlField("issueLinkType");
+                = new JqlField.Simple("issueLinkType");
             public static readonly JqlField IssueType
-                = new JqlField("issueType");
+                = new JqlField.Simple("issueType");
             public static readonly JqlField Labels
-                = new JqlField("labels");
+                = new JqlField.Simple("labels");
             public static readonly JqlField LastViewed
-                = new JqlField("lastViewed");
+                = new JqlField.Simple("lastViewed");
             public static readonly JqlField Level
-                = new JqlField("level");
+                = new JqlField.Simple("level");
             public static readonly JqlField Organization
-                = new JqlField("organizations");
+                = new JqlField.Simple("organizations");
             public static readonly JqlField OriginalEstimate
-                = new JqlField("originalEstimate");
+                = new JqlField.Simple("originalEstimate");
             public static readonly JqlField Parent
-                = new JqlField("parent");
+                = new JqlField.Simple("parent");
             public static readonly JqlField Priority
-                = new JqlField("priority");
+                = new JqlField.Simple("priority");
             public static readonly JqlField Project
-                = new JqlField("project");
+                = new JqlField.Simple("project");
             public static readonly JqlField ProjectType
-                = new JqlField("projectType");
+                = new JqlField.Simple("projectType");
             public static readonly JqlField RemainingEstimate
-                = new JqlField("remainingEstimate");
+                = new JqlField.Simple("remainingEstimate");
             public static readonly JqlField Reporter
-                = new JqlField("reporter");
+                = new JqlField.Simple("reporter");
             public static readonly JqlField RequestChannelType
-                = new JqlField("request-channel-type");
+                = new JqlField.Simple("request-channel-type");
             public static readonly JqlField RequestLastActivityTime
-                = new JqlField("request-last-activity-time");
+                = new JqlField.Simple("request-last-activity-time");
             public static readonly JqlField Resolution
-                = new JqlField("resolution");
+                = new JqlField.Simple("resolution");
             public static readonly JqlField Resolved
-                = new JqlField("resolved");
+                = new JqlField.Simple("resolved");
             public static readonly JqlField Sprint
-                = new JqlField("sprint");
+                = new JqlField.Simple("sprint");
             public static readonly JqlField Status
-                = new JqlField("status");
+                = new JqlField.Simple("status");
             public static readonly JqlField StatusCategory
-                = new JqlField("statusCategory");
+                = new JqlField.Simple("statusCategory");
             public static readonly JqlField Summary
-                = new JqlField("summary");
+                = new JqlField.Simple("summary");
             public static readonly JqlField Text
-                = new JqlField("text");
+                = new JqlField.Simple("text");
             public static readonly JqlField TimeToFirstResponse
-                = new JqlField("Time to first response");
+                = new JqlField.Simple("Time to first response");
             public static readonly JqlField TimeToResolution
-                = new JqlField("Time to resolution");
+                = new JqlField.Simple("Time to resolution");
             public static readonly JqlField TimeSpent
-                = new JqlField("timeSpent");
+                = new JqlField.Simple("timeSpent");
             public static readonly JqlField Updated
-                = new JqlField("updated");
+                = new JqlField.Simple("updated");
             public static readonly JqlField Voter
-                = new JqlField("voter");
+                = new JqlField.Simple("voter");
             public static readonly JqlField Votes
-                = new JqlField("votes");
+                = new JqlField.Simple("votes");
             public static readonly JqlField Watcher
-                = new JqlField("watcher");
+                = new JqlField.Simple("watcher");
             public static readonly JqlField Watchers
-                = new JqlField("watchers");
+                = new JqlField.Simple("watchers");
             public static readonly JqlField WorklogComment
-                = new JqlField("text");
+                = new JqlField.Simple("text");
             public static readonly JqlField WorklogDate
-                = new JqlField("worklogDate");
+                = new JqlField.Simple("worklogDate");
             public static readonly JqlField WorkRatio
-                = new JqlField("workRatio");
+                = new JqlField.Simple("workRatio");
+
+            public static class Development
+            {
+                public static class Branches
+                {
+                    public static readonly JqlField All =
+                        new JqlField.Development("branches", "all");
+                }
+
+                public static class Builds
+                {
+                    const string Subscript = "builds";
+
+                    public static readonly JqlField All =
+                        new JqlField.Development(Subscript, "all");
+                    public static readonly JqlField Failing =
+                        new JqlField.Development(Subscript, "failing");
+                    public static readonly JqlField Passed =
+                        new JqlField.Development(Subscript, "passed");
+                    public static readonly JqlField Status =
+                        new JqlField.Development(Subscript, "status");
+                }
+
+                public static class Commits
+                {
+                    public static readonly JqlField All =
+                        new JqlField.Development("commits", "all");
+                }
+
+                public static class Deployments
+                {
+                    const string Subscript = "deployments";
+
+                    public static readonly JqlField All =
+                        new JqlField.Development(Subscript, "all");
+                    public static readonly JqlField Deployed =
+                        new JqlField.Development(Subscript, "deployed");
+                    public static readonly JqlField NotDeployed =
+                        new JqlField.Development(Subscript, "notDeployed");
+                    public static readonly JqlField Environment =
+                        new JqlField.Development(Subscript, "environment");
+                }
+
+                public static class PullRequests
+                {
+                    const string Subscript = "pullrequests";
+
+                    public static readonly JqlField All =
+                        new JqlField.Development(Subscript, "all");
+                    public static readonly JqlField Open =
+                        new JqlField.Development(Subscript, "open");
+                    public static readonly JqlField Declined =
+                        new JqlField.Development(Subscript, "declined");
+                    public static readonly JqlField Merged =
+                        new JqlField.Development(Subscript, "merged");
+                    public static readonly JqlField Status =
+                        new JqlField.Development(Subscript, "status");
+                }
+
+                public static class Reviews
+                {
+                    const string Subscript = "reviews";
+
+                    public static readonly JqlField All =
+                        new JqlField.Development(Subscript, "all");
+                    public static readonly JqlField Open =
+                        new JqlField.Development(Subscript, "open");
+                }
+            }
         }
 
         // copy references for convenience when used with 'import static ...Jql'
