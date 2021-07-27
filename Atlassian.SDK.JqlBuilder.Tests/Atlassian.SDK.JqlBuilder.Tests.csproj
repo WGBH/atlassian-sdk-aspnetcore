@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Atlassian.SDK.AspNetCore/Atlassian.SDK.AspNetCore.csproj"/>
+    <ProjectReference Include="../Atlassian.SDK.JqlBuilder/Atlassian.SDK.JqlBuilder.csproj"/>
 
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
     <PackageReference Include="xunit" Version="2.4.1" />

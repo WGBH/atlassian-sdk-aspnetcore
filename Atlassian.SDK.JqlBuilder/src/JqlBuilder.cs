@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+#if NETSTANDARD2_1
 using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Linq;
 
 namespace Atlassian.Jira.JqlBuilder
@@ -129,7 +130,9 @@ namespace Atlassian.Jira.JqlBuilder
 
     public interface IJqlExpression
     {
+#if NETSTANDARD2_1
         [return: NotNull]
+#endif
         string ToString();
     }
 
@@ -150,7 +153,7 @@ namespace Atlassian.Jira.JqlBuilder
 
         internal sealed class Logical : JqlFilterExpression
         {
-            readonly IReadOnlySet<JqlFilterExpression> _expressions;
+            readonly HashSet<JqlFilterExpression> _expressions;
 
             internal Logical(JqlFilterOperator.Logical oper, IEnumerable<JqlFilterExpression> expressions)
                 : base(nameof(Logical), oper)
@@ -160,7 +163,7 @@ namespace Atlassian.Jira.JqlBuilder
                 if (expressions.Any(e => e == null))
                     throw new ArgumentException("Collection must not contain the null value!", nameof(expressions));
 
-                _expressions = expressions.ToImmutableHashSet();
+                _expressions = new HashSet<JqlFilterExpression>(expressions);
             }
 
             public override string ToString() =>
@@ -220,7 +223,7 @@ namespace Atlassian.Jira.JqlBuilder
         internal sealed class MultiValue : JqlFilterExpression
         {
             readonly JqlField _field;
-            readonly IReadOnlySet<object> _values;
+            readonly HashSet<object> _values;
 
             internal MultiValue(JqlField field, JqlFilterOperator.MultiValue oper, IEnumerable<object> values)
                 : base(nameof(MultiValue), oper)
@@ -231,7 +234,7 @@ namespace Atlassian.Jira.JqlBuilder
                     throw new ArgumentException("Collection must not contain the null value!", nameof(values));
 
                 _field = field;
-                _values = values.ToImmutableHashSet();
+                _values = new HashSet<object>(values);
             }
 
             public override string ToString() =>
@@ -290,7 +293,7 @@ namespace Atlassian.Jira.JqlBuilder
                 throw new ArgumentException("Collection must not contain the null value!", nameof(fields));
 
             Expression = expression;
-            Fields = fields.ToImmutableList();
+            Fields = fields.ToList().AsReadOnly();
         }
 
         public override string ToString() =>
@@ -465,7 +468,7 @@ namespace Atlassian.Jira.JqlBuilder
                 throw new ArgumentException("Collection must not contain the null value!", nameof(arguments));
 
             Name = name;
-            Arguments = arguments.ToImmutableList();
+            Arguments = arguments.ToList().AsReadOnly();
         }
 
         internal JqlFunction(string name, params string[] arguments)

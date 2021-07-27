@@ -25,6 +25,8 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
 
+    <ProjectReference Include="../Atlassian.SDK.JqlBuilder/Atlassian.SDK.JqlBuilder.csproj"/>
+
     <PackageReference Include="Atlassian.SDK" Version="12.4.0" />
 
     <PackageReference Include="GitInfo" Version="2.1.2">
