@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using Atlassian.Jira.JqlBuilder;
 using Xunit;
 
 using static Atlassian.Jira.JqlBuilder.Jql;
 
-namespace Atlassian.Jira.AspNetCore.Tests
+namespace Atlassian.Jira.JqlBuilder
 {
-    public class JqlBuilderTests
+    public class ExpressionTests
     {
         [Fact]
         public void ShouldBuildProperJqlAnyAll()
@@ -78,20 +77,6 @@ namespace Atlassian.Jira.AspNetCore.Tests
         }
 
         [Fact]
-        public void ShouldBuildProperJqlFunction()
-        {
-            var jql1 = Fields.Reporter == Functions.CurrentUser();
-            Assert.Equal("'reporter' = currentUser()", jql1.ToString());
-
-            var jql2 = Fields.FixVersion.In(Function("unreleasedVersions", "JORP"));
-            Assert.Equal("'fixVersion' IN (unreleasedVersions('JORP'))", jql2.ToString());
-
-            var jql3 = Fields.IssueKey.In(
-                Functions.UpdatedBy("mira_kajira", new DateTime(2020, 02, 01), new DateTime(2020, 02, 29)));
-            Assert.Equal("'issueKey' IN (updatedBy('mira_kajira', '2020/02/01', '2020/02/29'))", jql3.ToString());
-        }
-
-        [Fact]
         public void ShouldBuildProperJqlBinary()
         {
             var jql1 = Field("project") == "PROJ";
@@ -134,19 +119,23 @@ namespace Atlassian.Jira.AspNetCore.Tests
         }
 
         [Fact]
-        public void ShouldEscapeValuesProperly()
+        public void ShouldGuardAgainstNullValuesInFilter()
         {
-            var jql1 = Field("assignee") == "Bobby O'Shea";
-            Assert.Equal("'assignee' = 'Bobby O\\'Shea'", jql1.ToString());
+            Assert.Throws<ArgumentNullException>(() => All(null!));
 
-            var jql2 = Fields.Created == new DateTime(1984, 6, 3, 8, 20, 34);
-            Assert.Equal("'created' = '1984/06/03 08:20'", jql2.ToString());
+            Assert.Throws<ArgumentException>(() => Any(Field("foo") !=  "bar", null!));
 
-            var jql3 = Field("created") == new DateTime(1984, 6, 3);
-            Assert.Equal("'created' = '1984/06/03'", jql3.ToString());
+            Assert.Throws<ArgumentException>(() => Fields.Approvals.IsEmpty() & null!);
 
-            var jql4 = Fields.CustomerRequestType == "new compy";
-            Assert.Equal("'Customer Request Type' = 'new compy'", jql4.ToString());
+            Assert.Throws<ArgumentException>(() => null! | Fields.Approvals.IsNotEmpty());
+
+            Assert.Throws<ArgumentNullException>(() => default(JqlField)! == "bar");
+
+            Assert.Throws<ArgumentNullException>(() => Field("assignee") == null!);
+
+            Assert.Throws<ArgumentNullException>(() => Fields.Assignee.In(null!));
+
+            Assert.Throws<ArgumentException>(() => Fields.Assignee.NotIn("jorpo_demerrich", null!));
         }
 
         [Fact]
@@ -164,26 +153,8 @@ namespace Atlassian.Jira.AspNetCore.Tests
         }
 
         [Fact]
-        public void ShouldGuardAgainstNullValues()
+        public void ShouldGuardAgainstNullValuesInOrderBy()
         {
-            Assert.Throws<ArgumentNullException>(() => Field(null!));
-
-            Assert.Throws<ArgumentNullException>(() => All(null!));
-
-            Assert.Throws<ArgumentException>(() => Any(Field("foo") !=  "bar", null!));
-
-            Assert.Throws<ArgumentException>(() => Fields.Approvals.IsEmpty() & null!);
-
-            Assert.Throws<ArgumentException>(() => null! | Fields.Approvals.IsNotEmpty());
-
-            Assert.Throws<ArgumentNullException>(() => default(JqlField)! == "bar");
-
-            Assert.Throws<ArgumentNullException>(() => Field("assignee") == null!);
-
-            Assert.Throws<ArgumentNullException>(() => Fields.Assignee.In(null!));
-
-            Assert.Throws<ArgumentException>(() => Fields.Assignee.NotIn("jorpo_demerrich", null!));
-
             Assert.Throws<ArgumentNullException>(() => Field("foo").IsEmpty()
                 .OrderBy(default(JqlField)!, SortDirection.Descending));
 
@@ -194,12 +165,6 @@ namespace Atlassian.Jira.AspNetCore.Tests
 
             Assert.Throws<ArgumentNullException>(() => Field("foo").IsEmpty()
                 .OrderBy((Field("foo"), SortDirection.Ascending), default((JqlField, JqlSortDirection))));
-
-            Assert.Throws<ArgumentNullException>(() => Fields.Status == Function(null!, "bar"));
-
-            Assert.Throws<ArgumentNullException>(() => Fields.Status == Function("dummy", default(IEnumerable<String>)!));
-
-            Assert.Throws<ArgumentException>(() => Fields.Created > Functions.StartOfWeek(null!));
         }
     }
 }
