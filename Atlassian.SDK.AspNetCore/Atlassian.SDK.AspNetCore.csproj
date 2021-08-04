@@ -20,6 +20,20 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <Product>Atlassian.NET SDK Extensions for ASP.NET Core</Product>
+    <Title>$(Product)</Title>
+    <Description>
+      Provides utilities to consume Jira services provided by the Alassian.NET SDK
+      from an ASP.NET Core project. Includes Atlassian.SDK.JqlBuilder for building
+      complex JQL queries using a fluent API.
+    </Description>
+    <Authors>Samuel Justin Gabay</Authors>
+    <Company>WGBH Educational Foundation</Company>
+    <Copyright>Copyright 2021 WGBH Educational Foundation</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/WGBH/atlassian-sdk-aspnetcore</PackageProjectUrl>
+    <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,5 +47,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+
+    <None Include="../icon.png" Pack="true" PackagePath=""/>
   </ItemGroup>
 </Project>

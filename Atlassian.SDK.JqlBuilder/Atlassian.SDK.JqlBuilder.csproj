@@ -5,10 +5,25 @@
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <Product>Atlassian.NET SDK JQL Builder</Product>
+    <Title>$(Product)</Title>
+    <Description>
+      Provides a fluent API for building simple and complex JQL queries for Atlassian Jira.
+    </Description>
+    <Version>1.0.0</Version>
+    <Authors>Samuel Justin Gabay</Authors>
+    <Company>WGBH Educational Foundation</Company>
+    <Copyright>Copyright 2021 WGBH Educational Foundation</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/WGBH/atlassian-sdk-aspnetcore</PackageProjectUrl>
+    <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Condition="$(TargetFramework) == 'netstandard2.0'" Include="Microsoft.Bcl.HashCode" Version="1.1.1" />
+
+    <None Include="../icon.png" Pack="true" PackagePath=""/>
   </ItemGroup>
 
 </Project>

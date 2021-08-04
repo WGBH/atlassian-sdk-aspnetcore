@@ -1,3 +1,6 @@
+// Copyright 2021 WGBH Educational Foundation
+// Licensed under the Apache License, Version 2.0
+
 using System.Threading;
 using System.Threading.Tasks;
 using Atlassian.Jira.Async;

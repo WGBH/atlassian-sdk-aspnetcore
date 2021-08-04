@@ -1,3 +1,6 @@
+// Copyright 2021 WGBH Educational Foundation
+// Licensed under the Apache License, Version 2.0
+
 namespace Atlassian.Jira.JqlBuilder
 {
     public interface IJqlOperator

@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.6.30114.105
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlassian.SDK.AspNetCore", "Atlassian.SDK.AspNetCore\Atlassian.SDK.AspNetCore.csproj", "{70A416DB-B03B-4732-8DE3-35449C1D3ED8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlassian.SDK.JqlBuilder", "Atlassian.SDK.JqlBuilder\Atlassian.SDK.JqlBuilder.csproj", "{BBDE58A7-AD10-4C88-A3A3-CEBC98325216}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlassian.SDK.JqlBuilder.Tests", "Atlassian.SDK.JqlBuilder.Tests\Atlassian.SDK.JqlBuilder.Tests.csproj", "{4EA04133-FA78-438C-BD54-400742049269}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{70A416DB-B03B-4732-8DE3-35449C1D3ED8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70A416DB-B03B-4732-8DE3-35449C1D3ED8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70A416DB-B03B-4732-8DE3-35449C1D3ED8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70A416DB-B03B-4732-8DE3-35449C1D3ED8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BBDE58A7-AD10-4C88-A3A3-CEBC98325216}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BBDE58A7-AD10-4C88-A3A3-CEBC98325216}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BBDE58A7-AD10-4C88-A3A3-CEBC98325216}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BBDE58A7-AD10-4C88-A3A3-CEBC98325216}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4EA04133-FA78-438C-BD54-400742049269}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4EA04133-FA78-438C-BD54-400742049269}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4EA04133-FA78-438C-BD54-400742049269}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4EA04133-FA78-438C-BD54-400742049269}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
