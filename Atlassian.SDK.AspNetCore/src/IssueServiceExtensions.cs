@@ -1,8 +1,9 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Atlassian.Jira.Async;
 using Atlassian.Jira.JqlBuilder;
 
-namespace Atlassian.Jira.AspNetCore
+namespace Atlassian.Jira
 {
     public static class IssueServiceExtensions
     {

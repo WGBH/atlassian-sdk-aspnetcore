@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Atlassian.Jira.AspNetCore
+namespace Atlassian.Jira.Async
 {
     public interface IJiraAsyncEnumerable<T> : IAsyncEnumerable<T>
     {

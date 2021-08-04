@@ -1,4 +1,6 @@
-namespace Atlassian.Jira.AspNetCore
+using Atlassian.Jira.Async;
+
+namespace Atlassian.Jira
 {
     public static class JiraGroupServiceExtensions
     {

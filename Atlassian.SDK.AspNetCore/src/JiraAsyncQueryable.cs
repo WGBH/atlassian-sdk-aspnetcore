@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Atlassian.Jira.Linq;
 
-namespace Atlassian.Jira.AspNetCore
+namespace Atlassian.Jira.Async
 {
     class OneArgSelectorJqlResultsAsyncEnumerable<T> : JqlResultsAsyncEnumerable, IJqlResultsAsyncEnumerable<T>
     {
