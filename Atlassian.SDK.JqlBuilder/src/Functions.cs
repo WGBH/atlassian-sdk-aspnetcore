@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Atlassian.Jira.JqlBuilder
 {
-    // Note: This class has a special cased in JqlTextUtil.EscapeValue
+    // Note: This class is special cased in JqlTextUtil.EscapeValue() and JqlFilterExpression.MultiValue.ToString()
     public class JqlFunction
     {
         public string Name { get; }

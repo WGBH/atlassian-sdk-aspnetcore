@@ -21,6 +21,9 @@ namespace Atlassian.Jira.AspNetCore.Tests
 
             var jql4 = Fields.CustomerRequestType == "new compy";
             Assert.Equal("'Customer Request Type' = 'new compy'", jql4.ToString());
+
+            var jql5 = Fields.OriginalEstimate >= 240;
+            Assert.Equal("'originalEstimate' >= 240", jql5.ToString());
         }
     }
 }

@@ -15,11 +15,11 @@ namespace Atlassian.Jira.JqlBuilder
             Assert.Equal("'reporter' = currentUser()", jql1.ToString());
 
             var jql2 = Fields.FixVersion.In(Function("unreleasedVersions", "JORP"));
-            Assert.Equal("'fixVersion' IN (unreleasedVersions('JORP'))", jql2.ToString());
+            Assert.Equal("'fixVersion' IN unreleasedVersions('JORP')", jql2.ToString());
 
             var jql3 = Fields.IssueKey.In(
                 Functions.UpdatedBy("mira_kajira", new DateTime(2020, 02, 01), new DateTime(2020, 02, 29)));
-            Assert.Equal("'issueKey' IN (updatedBy('mira_kajira', '2020/02/01', '2020/02/29'))", jql3.ToString());
+            Assert.Equal("'issueKey' IN updatedBy('mira_kajira', '2020/02/01', '2020/02/29')", jql3.ToString());
         }
 
         [Fact]

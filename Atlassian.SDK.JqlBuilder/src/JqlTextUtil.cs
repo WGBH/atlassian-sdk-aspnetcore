@@ -9,6 +9,11 @@ namespace Atlassian.Jira.JqlBuilder
             {
                 DateTime dt => '\'' + FormatDateTime(dt) + '\'',
                 JqlFunction function => function.ToString(),
+                _ when value is sbyte || value is byte || value is short || value is ushort
+                        || value is int || value is uint || value is long || value is ulong
+                        || value is float || value is double || value is decimal
+                        || value is IntPtr /* aka nint in C# 9 */ || value is UIntPtr /* aka nuint in C# 9 */ =>
+                    value.ToString(),
                 _ => "'" + value.ToString()!.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("'", "\\'") + "'"
             };
 

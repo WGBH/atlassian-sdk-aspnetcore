@@ -116,9 +116,16 @@ namespace Atlassian.Jira.JqlBuilder
                 _values = new HashSet<object>(values);
             }
 
-            public override string ToString() =>
-                _field.ToString() + ' ' + Operator.Value
-                    +  " (" + String.Join(", ", _values.Select(v => JqlTextUtil.EscapeValue(v))) + ")";
+            public override string ToString()
+            {
+                var start = _field.ToString() + ' ' + Operator.Value + ' ';
+                var needsParens = !(_values.Count == 1 && _values.Single() is JqlFunction);
+
+                if (needsParens)
+                    return start + '(' + String.Join(", ", _values.Select(v => JqlTextUtil.EscapeValue(v))) + ')';
+                else
+                    return start + JqlTextUtil.EscapeValue(_values.Single());
+            }
 
             public override bool Equals(object? obj) =>
                 obj is MultiValue other && _field.Equals(other._field) && Operator.Equals(other.Operator)
