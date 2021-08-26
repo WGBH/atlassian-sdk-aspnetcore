@@ -1,10 +1,13 @@
 // Copyright 2021 WGBH Educational Foundation
 // Licensed under the Apache License, Version 2.0
 
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Atlassian.Jira.Async;
 using Atlassian.Jira.JqlBuilder;
+using JiraRoot = Atlassian.Jira.Jira;
 
 namespace Atlassian.Jira
 {
@@ -78,5 +81,24 @@ namespace Atlassian.Jira
 
         public static IAsyncJiraQueryable<Issue> GetAsyncQueryable(this IIssueService issueService) =>
             new AsyncJiraQueryable<Issue>(issueService);
+
+        // The way to create a new issue in a Jira instance is using the Issue class’s constructor,
+        // but this requires the root Jira object. I am purposefully avoiding having the
+        // root Jira object available via dependency injection; hence this extension method.
+        // I might have designed the SDK so that the Issue class does not depend on the
+        // root Jira class and all issue operations use the services, but ¯\_(ツ)_/¯
+        public static Issue NewIssue(this IIssueService issueService, string projectKey, string? parentIssueKey = null)
+        {
+            // HACK Pull the root Jira object out via reflection
+            var jiraRoot = (JiraRoot?) issueService.GetType()
+                .GetFields(BindingFlags.Instance | BindingFlags.NonPublic)
+                .Single(f => f.FieldType == typeof(JiraRoot))
+                .GetValue(issueService);
+
+            return new Issue(jiraRoot, projectKey, parentIssueKey);
+        }
+
+        public static Issue NewIssue(this IIssueService issueService, Project project, Issue? parent = null) =>
+            issueService.NewIssue(project.Key, parent?.Key.Value);
     }
 }
