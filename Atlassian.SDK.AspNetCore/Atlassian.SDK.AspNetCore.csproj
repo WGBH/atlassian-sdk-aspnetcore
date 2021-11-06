@@ -18,15 +18,15 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <LangVersion>9</LangVersion>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
     <Product>Atlassian.NET SDK Extensions for ASP.NET Core</Product>
     <Title>$(Product)</Title>
     <Description>
-      Provides utilities to consume Jira services provided by the Alassian.NET SDK
-      from an ASP.NET Core project. Includes Atlassian.SDK.JqlBuilder for building
-      complex JQL queries using a fluent API.
+      Provides utilities to consume Jira services provided by the Alassian.NET SDK from an ASP.NET Core project.
+      Includes Atlassian.SDK.JqlBuilder for building complex JQL queries using a fluent API.
     </Description>
     <Authors>Samuel Justin Gabay</Authors>
     <Company>WGBH Educational Foundation</Company>

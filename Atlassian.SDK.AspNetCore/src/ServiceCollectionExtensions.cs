@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Atlassian.Jira.OAuth;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using JiraRoot = Atlassian.Jira.Jira;
 
 namespace Atlassian.Jira.AspNetCore
@@ -23,7 +24,12 @@ namespace Atlassian.Jira.AspNetCore
         public Uri? BaseUri { get; set; }
         public string? Username { get; set; }
         public string? Password { get; set; }
-        public JiraRestClientSettings? RestClientSettings { get; set; }
+        public JiraRestClientSettings RestClientSettings { get; } = new();
+
+        public JiraWithBasicAuthOptions()
+        {
+            RestClientSettings.JsonSerializerSettings.Formatting = Formatting.None;
+        }
 
         internal void Validate()
         {
@@ -40,7 +46,12 @@ namespace Atlassian.Jira.AspNetCore
         public string? OAuthTokenSecret { get; set; }
         public JiraOAuthSignatureMethod OAuthSignatureMethod { get; set; } =
             JiraOAuthSignatureMethod.RsaSha1;
-        public JiraRestClientSettings? RestClientSettings { get; set; }
+        public JiraRestClientSettings RestClientSettings { get; } = new();
+
+        public JiraWithOAuthOptions()
+        {
+            RestClientSettings.JsonSerializerSettings.Formatting = Formatting.None;
+        }
 
         internal void Validate()
         {
